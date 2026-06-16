@@ -174,7 +174,9 @@
         _totalContribuintes = contribuintes.Count;
         _cobrancasEmAberto = cobrancas.Count(c => c.Status is StatusCobranca.Pendente or StatusCobranca.Vencido);
         _arrecadadoMes = cobrancas
-            .Where(c => c.Status == StatusCobranca.Pago && c.DataPagamento?.Month == DateTime.Today.Month)
+            .Where(c => c.Status == StatusCobranca.Pago &&
+                        c.DataPagamento?.Month == DateTime.Today.Month &&
+                        c.DataPagamento?.Year == DateTime.Today.Year)
             .Sum(c => c.Valor);
         _processosAtivos = JuridicoService.GetProcessos().Count(p => p.Situacao == "Em andamento");
         _ultimasCobrancas = cobrancas.OrderByDescending(c => c.Vencimento).Take(5).ToList();
