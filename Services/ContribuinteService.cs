@@ -42,7 +42,7 @@ public class ContribuinteService
         return razoesSociais.Select((nome, i) => new Contribuinte
         {
             Id = i + 1,
-            EntidadeId = rng.Next(1, 5),
+            EntidadeId = rng.Next(1, 6),
             RazaoSocial = nome,
             Cnpj = $"{rng.Next(10, 99)}.{rng.Next(100, 999)}.{rng.Next(100, 999)}/0001-{rng.Next(10, 99)}",
             Cnae = cnaes[rng.Next(cnaes.Length)],

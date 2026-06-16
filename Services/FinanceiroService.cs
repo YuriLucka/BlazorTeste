@@ -30,7 +30,7 @@ public class FinanceiroService
             return new LancamentoFinanceiro
             {
                 Id = i,
-                EntidadeId = rng.Next(1, 5),
+                EntidadeId = rng.Next(1, 6),
                 Data = data,
                 Categoria = isEntrada ? "Arrecadação de Contribuintes" : categorias[rng.Next(categorias.Length)],
                 Descricao = isEntrada ? "Recebimento de boletos — lote automático" : $"Pagamento referente a {(fornecedor?.Categoria ?? "serviço").ToLower()}",
