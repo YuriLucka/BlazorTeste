@@ -26,6 +26,7 @@
                 @(AppState.EntidadeAtiva?.Sigla ?? "Selecionar entidade")
             </MudChip>
         </MudTooltip>
+        <MudBreadcrumbs Items="@Breadcrumbs.ToList()" Separator=">" Class="ms-2 d-none d-sm-flex" Style="color: white; opacity: 0.85;" />
         <MudTooltip Text="@(AppState.DarkMode ? "Modo claro" : "Modo escuro")">
             <MudIconButton Icon="@(AppState.DarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
                            Color="Color.Inherit"
@@ -96,6 +97,37 @@
             DrawerWidthLeft = "240px"
         }
     };
+
+    private IEnumerable<BreadcrumbItem> Breadcrumbs => GetBreadcrumbs();
+
+    private IEnumerable<BreadcrumbItem> GetBreadcrumbs()
+    {
+        var uri = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var path = "/" + uri.TrimStart('/').Split('?')[0];
+
+        var items = new List<BreadcrumbItem>
+        {
+            new BreadcrumbItem("Início", href: "/", icon: Icons.Material.Filled.Home)
+        };
+
+        var label = path switch
+        {
+            "/" => null,
+            "/contribuintes" => "Contribuintes",
+            "/cobrancas" => "Cobranças",
+            "/juridico" => "Jurídico",
+            "/financeiro" => "Financeiro",
+            "/mailing" => "Mailing",
+            "/entidades" => "Entidades",
+            "/usuarios" => "Usuários",
+            _ => null
+        };
+
+        if (label != null)
+            items.Add(new BreadcrumbItem(label, href: null, disabled: true));
+
+        return items;
+    }
 
     protected override void OnInitialized()
     {
