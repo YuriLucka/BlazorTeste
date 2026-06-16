@@ -1,23 +1,102 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject AppStateService AppState
+@inject IDialogService DialogService
+@implements IDisposable
 
-<div class="page">
-    <div class="sidebar">
+<MudThemeProvider Theme="_theme" IsDarkMode="AppState.DarkMode" />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="1" Dense="false" Color="Color.Primary">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                       Color="Color.Inherit"
+                       Edge="Edge.Start"
+                       OnClick="@(() => _drawerOpen = !_drawerOpen)" />
+        <MudText Typo="Typo.h6" Class="ml-2 d-none d-sm-block" Style="letter-spacing:.5px;">
+            SindERP
+        </MudText>
+        <MudSpacer />
+        <MudTooltip Text="Trocar entidade">
+            <MudChip T="string"
+                     Icon="@Icons.Material.Filled.AccountTree"
+                     Color="Color.Surface"
+                     Size="Size.Small"
+                     Class="mr-1"
+                     OnClick="OpenEntityDialog">
+                @(AppState.EntidadeAtiva?.Sigla ?? "Selecionar entidade")
+            </MudChip>
+        </MudTooltip>
+        <MudTooltip Text="@(AppState.DarkMode ? "Modo claro" : "Modo escuro")">
+            <MudIconButton Icon="@(AppState.DarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)"
+                           Color="Color.Inherit"
+                           OnClick="@(() => AppState.ToggleDarkMode())" />
+        </MudTooltip>
+        <MudAvatar Color="Color.Secondary" Size="Size.Small" Class="ml-1">AD</MudAvatar>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_drawerOpen"
+               Elevation="2"
+               Variant="@DrawerVariant.Responsive"
+               ClipMode="DrawerClipMode.Always">
+        <MudDrawerHeader Class="pa-4 pb-2">
+            <div>
+                <MudText Typo="Typo.subtitle1" Color="Color.Primary" Style="font-weight:700;">SindERP</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Sistema Sindical</MudText>
+            </div>
+        </MudDrawerHeader>
+        <MudDivider />
         <NavMenu />
-    </div>
+    </MudDrawer>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-4 mt-2">
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
 
-<div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
-    <span class="dismiss">🗙</span>
-</div>
+@code {
+    private bool _drawerOpen = true;
+
+    private readonly MudTheme _theme = new()
+    {
+        Palette = new PaletteLight
+        {
+            Primary = "#1565C0",
+            Secondary = "#00897B",
+            Background = "#F5F7FA",
+            AppbarBackground = "#1565C0",
+            DrawerBackground = "#FFFFFF"
+        },
+        PaletteDark = new PaletteDark
+        {
+            Primary = "#5C9CE6",
+            Secondary = "#4DB6A6",
+            Background = "#1A1A2E",
+            Surface = "#16213E",
+            AppbarBackground = "#0D1B2A",
+            DrawerBackground = "#16213E"
+        },
+        LayoutProperties = new LayoutProperties
+        {
+            DefaultBorderRadius = "12px",
+            DrawerWidthLeft = "240px"
+        }
+    };
+
+    protected override void OnInitialized()
+    {
+        AppState.OnChange += StateHasChanged;
+    }
+
+    private void OpenEntityDialog()
+    {
+        // Placeholder — will be wired in Task 11 (Entidades page)
+    }
+
+    public void Dispose()
+    {
+        AppState.OnChange -= StateHasChanged;
+    }
+}

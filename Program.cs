@@ -1,4 +1,5 @@
 using BlazorTeste.Components;
+using BlazorTeste.Services;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
@@ -8,5 +9,6 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddMudServices();
+builder.Services.AddSingleton<AppStateService>();
 
 await builder.Build().RunAsync();
