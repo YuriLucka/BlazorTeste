@@ -9,15 +9,17 @@ public class AppStateService
 
     public event Action? OnChange;
 
-    public void SetEntidade(Entidade entidade)
+    public void SetEntidade(Entidade? entidade)
     {
         EntidadeAtiva = entidade;
-        OnChange?.Invoke();
+        NotifyStateChanged();
     }
 
     public void ToggleDarkMode()
     {
         DarkMode = !DarkMode;
-        OnChange?.Invoke();
+        NotifyStateChanged();
     }
+
+    private void NotifyStateChanged() => OnChange?.Invoke();
 }

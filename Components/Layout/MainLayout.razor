@@ -1,6 +1,5 @@
 @inherits LayoutComponentBase
 @inject AppStateService AppState
-@inject IDialogService DialogService
 @implements IDisposable
 
 <MudThemeProvider Theme="_theme" IsDarkMode="AppState.DarkMode" />
@@ -23,7 +22,7 @@
                      Color="Color.Surface"
                      Size="Size.Small"
                      Class="mr-1"
-                     OnClick="OpenEntityDialog">
+                     Disabled="true">
                 @(AppState.EntidadeAtiva?.Sigla ?? "Selecionar entidade")
             </MudChip>
         </MudTooltip>
@@ -38,7 +37,7 @@
     <MudDrawer @bind-Open="_drawerOpen"
                Elevation="2"
                Variant="@DrawerVariant.Responsive"
-               ClipMode="DrawerClipMode.Always">
+               ClipMode="DrawerClipMode.Never">
         <MudDrawerHeader Class="pa-4 pb-2">
             <div>
                 <MudText Typo="Typo.subtitle1" Color="Color.Primary" Style="font-weight:700;">SindERP</MudText>
@@ -51,15 +50,28 @@
 
     <MudMainContent>
         <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pa-4 mt-2">
-            @Body
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent>
+                    <MudAlert Severity="Severity.Error" Class="mt-4">
+                        Ocorreu um erro inesperado.
+                        <MudButton Variant="Variant.Text" OnClick="@(() => _errorBoundary?.Recover())">Tentar novamente</MudButton>
+                    </MudAlert>
+                </ErrorContent>
+            </ErrorBoundary>
         </MudContainer>
     </MudMainContent>
 </MudLayout>
 
 @code {
-    private bool _drawerOpen = true;
+    private bool _drawerOpen = false;
+    private ErrorBoundary? _errorBoundary;
 
-    private readonly MudTheme _theme = new()
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private static readonly MudTheme _theme = new()
     {
         Palette = new PaletteLight
         {
@@ -88,15 +100,18 @@
     protected override void OnInitialized()
     {
         AppState.OnChange += StateHasChanged;
+        Navigation.LocationChanged += OnLocationChanged;
     }
 
-    private void OpenEntityDialog()
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        // Placeholder — will be wired in Task 11 (Entidades page)
+        _drawerOpen = false;
+        InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
         AppState.OnChange -= StateHasChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }
