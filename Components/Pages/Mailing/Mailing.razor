@@ -57,9 +57,9 @@
 @code {
     private List<Campanha> _campanhas = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _campanhas = MailingService.GetAll().OrderByDescending(c => c.DataEnvio).ToList();
+        _campanhas = (await MailingService.GetAllAsync()).OrderByDescending(c => c.DataEnvio).ToList();
     }
 
     private Color GetStatusColor(StatusCampanha status) => status switch

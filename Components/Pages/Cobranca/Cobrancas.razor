@@ -104,12 +104,12 @@
     private Cobranca? _selectedCobranca;
     private bool _dialogOpen;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _all = CobrancaService.GetAll();
-        _pendentes = CobrancaService.GetByStatus(StatusCobranca.Pendente);
-        _vencidas = CobrancaService.GetByStatus(StatusCobranca.Vencido);
-        _pagas = CobrancaService.GetByStatus(StatusCobranca.Pago);
+        _all = await CobrancaService.GetAllAsync();
+        _pendentes = await CobrancaService.GetByStatusAsync(StatusCobranca.Pendente);
+        _vencidas = await CobrancaService.GetByStatusAsync(StatusCobranca.Vencido);
+        _pagas = await CobrancaService.GetByStatusAsync(StatusCobranca.Pago);
     }
 
     private void OpenDetail(Cobranca cobranca)

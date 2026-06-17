@@ -31,11 +31,6 @@
                 <PropertyColumn Property="c => c.Cnae" Title="CNAE" />
                 <PropertyColumn Property="c => c.RegimeTributario" Title="Regime" />
                 <PropertyColumn Property="c => c.NumeroFuncionarios" Title="Funcionários" />
-                <TemplateColumn Title="Capital Social">
-                    <CellTemplate>
-                        @context.Item.CapitalSocial.ToString("C0")
-                    </CellTemplate>
-                </TemplateColumn>
                 <TemplateColumn Title="Situação">
                     <CellTemplate>
                         <MudChip T="string" Size="Size.Small"
@@ -180,9 +175,9 @@
     private Contribuinte? _selected;
     private bool _drawerOpen;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _contribuintes = ContribuinteService.GetAll();
+        _contribuintes = await ContribuinteService.GetAllAsync();
     }
 
     private void OnRowClick(DataGridRowClickEventArgs<Contribuinte> args)

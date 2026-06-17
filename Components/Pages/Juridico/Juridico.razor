@@ -19,17 +19,15 @@
                     <HeaderContent>
                         <MudTh>Número</MudTh>
                         <MudTh>Tipo</MudTh>
-                        <MudTh>Vara</MudTh>
                         <MudTh>Tribunal</MudTh>
                         <MudTh>Advogado</MudTh>
                         <MudTh>Situação</MudTh>
                     </HeaderContent>
                     <RowTemplate>
-                        <MudTd><MudText Typo="Typo.body2" Style="font-family:monospace;">@context.Numero</MudText></MudTd>
-                        <MudTd>@context.Tipo</MudTd>
-                        <MudTd>@context.Vara</MudTd>
-                        <MudTd>@context.Tribunal</MudTd>
-                        <MudTd>@context.NomeAdvogado</MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="font-family:monospace; white-space:nowrap; font-size:0.75rem;">@context.Numero</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.Tipo</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.Tribunal</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.NomeAdvogado</MudText></MudTd>
                         <MudTd>
                             <MudChip T="string" Size="Size.Small"
                                      Color="@GetSituacaoColor(context.Situacao)">
@@ -80,10 +78,10 @@
                     </HeaderContent>
                     <RowTemplate>
                         <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.DataHora.ToString("dd/MM/yyyy HH:mm")</MudText></MudTd>
-                        <MudTd><MudText Typo="Typo.body2" Style="font-family:monospace;font-size:0.75rem;">@context.NumeroProcesso</MudText></MudTd>
-                        <MudTd>@context.Tipo</MudTd>
-                        <MudTd>@context.NomeAdvogado</MudTd>
-                        <MudTd>@context.Local</MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="font-family:monospace;font-size:0.75rem;white-space:nowrap;">@context.NumeroProcesso</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.Tipo</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.NomeAdvogado</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.Local</MudText></MudTd>
                         <MudTd>
                             <MudChip T="string" Size="Size.Small"
                                      Color="@GetAudSituacaoColor(context.Situacao)">
@@ -102,11 +100,11 @@
     private List<Advogado> _advogados = new();
     private List<Audiencia> _audiencias = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _processos = JuridicoService.GetProcessos();
-        _advogados = JuridicoService.GetAdvogados();
-        _audiencias = JuridicoService.GetAudiencias().OrderBy(a => a.DataHora).ToList();
+        _processos = await JuridicoService.GetProcessosAsync();
+        _advogados = await JuridicoService.GetAdvogadosAsync();
+        _audiencias = (await JuridicoService.GetAudienciasAsync()).OrderBy(a => a.DataHora).ToList();
     }
 
     private Color GetSituacaoColor(string situacao) => situacao switch

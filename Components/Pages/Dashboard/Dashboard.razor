@@ -13,13 +13,13 @@
 
 <MudGrid Spacing="3">
     <MudItem xs="12" sm="6" md="3">
-        <MudCard Elevation="2" Class="rounded-xl">
+        <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
             <MudCardContent Class="pa-4">
                 <div class="d-flex align-center gap-3">
                     <MudIcon Icon="@Icons.Material.Filled.Business"
                              Style="font-size:2.5rem;" Color="Color.Primary" />
-                    <div>
-                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1;">
+                    <div style="min-width:0;">
+                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1; white-space:nowrap;">
                             @_totalContribuintes.ToString("N0")
                         </MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuintes</MudText>
@@ -30,13 +30,13 @@
     </MudItem>
 
     <MudItem xs="12" sm="6" md="3">
-        <MudCard Elevation="2" Class="rounded-xl">
+        <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
             <MudCardContent Class="pa-4">
                 <div class="d-flex align-center gap-3">
                     <MudIcon Icon="@Icons.Material.Filled.Warning"
                              Style="font-size:2.5rem;" Color="Color.Warning" />
-                    <div>
-                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1;">
+                    <div style="min-width:0;">
+                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1; white-space:nowrap;">
                             @_cobrancasEmAberto.ToString("N0")
                         </MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">Cobranças em aberto</MudText>
@@ -47,13 +47,13 @@
     </MudItem>
 
     <MudItem xs="12" sm="6" md="3">
-        <MudCard Elevation="2" Class="rounded-xl">
+        <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
             <MudCardContent Class="pa-4">
                 <div class="d-flex align-center gap-3">
                     <MudIcon Icon="@Icons.Material.Filled.AttachMoney"
                              Style="font-size:2.5rem;" Color="Color.Success" />
-                    <div>
-                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1;">
+                    <div style="min-width:0;">
+                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1; white-space:nowrap;">
                             @_arrecadadoMes.ToString("C0")
                         </MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">Arrecadado no mês</MudText>
@@ -64,13 +64,13 @@
     </MudItem>
 
     <MudItem xs="12" sm="6" md="3">
-        <MudCard Elevation="2" Class="rounded-xl">
+        <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
             <MudCardContent Class="pa-4">
                 <div class="d-flex align-center gap-3">
                     <MudIcon Icon="@Icons.Material.Filled.Gavel"
                              Style="font-size:2.5rem;" Color="Color.Error" />
-                    <div>
-                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1;">
+                    <div style="min-width:0;">
+                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1; white-space:nowrap;">
                             @_processosAtivos
                         </MudText>
                         <MudText Typo="Typo.caption" Color="Color.Secondary">Processos ativos</MudText>
@@ -163,13 +163,17 @@
     private List<Audiencia> _proximasAudiencias = new();
     private List<ChartSeries> _chartSeries = new();
     private string[] _chartLabels = Array.Empty<string>();
-    private readonly ChartOptions _chartOptions = new ChartOptions { YAxisFormat = "C0" };
-
-    protected override void OnInitialized()
+    private readonly ChartOptions _chartOptions = new ChartOptions
     {
-        var contribuintes = ContribuinteService.GetAll();
-        var cobrancas = CobrancaService.GetAll();
-        var audiencias = JuridicoService.GetAudiencias();
+        YAxisFormat = "C0",
+        MaxNumYAxisTicks = 6
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var contribuintes = await ContribuinteService.GetAllAsync();
+        var cobrancas = await CobrancaService.GetAllAsync();
+        var audiencias = await JuridicoService.GetAudienciasAsync();
 
         _totalContribuintes = contribuintes.Count;
         _cobrancasEmAberto = cobrancas.Count(c => c.Status is StatusCobranca.Pendente or StatusCobranca.Vencido);
@@ -178,7 +182,7 @@
                         c.DataPagamento?.Month == DateTime.Today.Month &&
                         c.DataPagamento?.Year == DateTime.Today.Year)
             .Sum(c => c.Valor);
-        _processosAtivos = JuridicoService.GetProcessos().Count(p => p.Situacao == "Em andamento");
+        _processosAtivos = (await JuridicoService.GetProcessosAsync()).Count(p => p.Situacao == "Em andamento");
         _ultimasCobrancas = cobrancas.OrderByDescending(c => c.Vencimento).Take(5).ToList();
         _proximasAudiencias = audiencias
             .Where(a => a.Situacao == "Agendada" && a.DataHora >= DateTime.Today)

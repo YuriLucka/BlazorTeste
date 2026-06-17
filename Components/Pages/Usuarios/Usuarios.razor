@@ -61,18 +61,19 @@
 @code {
     private List<Usuario> _usuarios = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _usuarios = UsuarioService.GetAll();
+        _usuarios = await UsuarioService.GetAllAsync();
     }
 
     private static string GetUltimoAcessoLabel(DateTime dt)
     {
         var diff = DateTime.Now - dt;
-        return diff.TotalMinutes < 60
-            ? $"há {(int)diff.TotalMinutes} min"
-            : diff.TotalHours < 24
-                ? $"há {(int)diff.TotalHours}h"
-                : $"há {(int)diff.TotalDays} dias";
+        if (diff.TotalMinutes < 60)
+            return $"há {(int)diff.TotalMinutes} min";
+        if (diff.TotalHours < 24)
+            return $"há {(int)diff.TotalHours}h";
+        var dias = (int)diff.TotalDays;
+        return $"há {dias} {(dias == 1 ? "dia" : "dias")}";
     }
 }

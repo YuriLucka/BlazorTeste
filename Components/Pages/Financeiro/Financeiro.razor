@@ -94,10 +94,10 @@
     private List<Fornecedor> _fornecedores = new();
     private List<FluxoMensal> _fluxo = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _lancamentos = FinanceiroService.GetLancamentos().OrderByDescending(l => l.Data).ToList();
-        _fornecedores = FinanceiroService.GetFornecedores();
+        _lancamentos = (await FinanceiroService.GetLancamentosAsync()).OrderByDescending(l => l.Data).ToList();
+        _fornecedores = await FinanceiroService.GetFornecedoresAsync();
 
         var months = Enumerable.Range(0, 6).Select(i => DateTime.Today.AddMonths(-5 + i)).ToList();
         _fluxo = months.Select(m => new FluxoMensal

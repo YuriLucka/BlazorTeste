@@ -10,12 +10,18 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddMudServices();
 builder.Services.AddSingleton<AppStateService>();
-builder.Services.AddSingleton<EntidadeService>();
-builder.Services.AddSingleton<ContribuinteService>();
-builder.Services.AddSingleton<CobrancaService>();
-builder.Services.AddSingleton<JuridicoService>();
-builder.Services.AddSingleton<FinanceiroService>();
-builder.Services.AddSingleton<MailingService>();
-builder.Services.AddSingleton<UsuarioService>();
+
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri("http://localhost:5141")
+});
+
+builder.Services.AddScoped<EntidadeService>();
+builder.Services.AddScoped<ContribuinteService>();
+builder.Services.AddScoped<CobrancaService>();
+builder.Services.AddScoped<JuridicoService>();
+builder.Services.AddScoped<FinanceiroService>();
+builder.Services.AddScoped<MailingService>();
+builder.Services.AddScoped<UsuarioService>();
 
 await builder.Build().RunAsync();

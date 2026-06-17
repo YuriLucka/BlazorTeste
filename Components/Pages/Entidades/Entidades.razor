@@ -54,9 +54,9 @@
 @code {
     private List<Entidade> _entidades = new();
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        _entidades = EntidadeService.GetAll();
+        _entidades = await EntidadeService.GetAllAsync();
         if (AppState.EntidadeAtiva is null && _entidades.Count > 0)
             AppState.SetEntidade(_entidades[0]);
     }
