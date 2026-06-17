@@ -1,0 +1,68 @@
+@page "/entidades"
+@inject EntidadeService EntidadeService
+@inject AppStateService AppState
+
+<PageTitle>Entidades — SindERP</PageTitle>
+
+<div class="d-flex align-center justify-space-between mb-4">
+    <MudText Typo="Typo.h5" Style="font-weight:600;">Entidades</MudText>
+</div>
+
+<MudGrid Spacing="3">
+    @foreach (var entidade in _entidades)
+    {
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="2" Class="rounded-xl cursor-pointer"
+                     @onclick="@(() => SelectEntidade(entidade))"
+                     Style="@(AppState.EntidadeAtiva?.Id == entidade.Id ? "border: 2px solid var(--mud-palette-primary);" : "")">
+                <MudCardContent Class="pa-4">
+                    <div class="d-flex align-center gap-3 mb-3">
+                        <MudAvatar Color="Color.Primary" Size="Size.Large" Variant="Variant.Filled">
+                            @entidade.Sigla[0]
+                        </MudAvatar>
+                        <div>
+                            <MudText Typo="Typo.subtitle1" Style="font-weight:700;">@entidade.Sigla</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@entidade.CidadeSede — SP</MudText>
+                        </div>
+                        @if (AppState.EntidadeAtiva?.Id == entidade.Id)
+                        {
+                            <MudSpacer />
+                            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Primary" />
+                        }
+                    </div>
+                    <MudText Typo="Typo.body2" Class="mb-2">@entidade.Nome</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-3">@entidade.Cnpj</MudText>
+                    <div class="d-flex align-center gap-1">
+                        <MudIcon Icon="@Icons.Material.Filled.Business" Size="Size.Small" Color="Color.Secondary" />
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @entidade.TotalContribuintes.ToString("N0") contribuintes
+                        </MudText>
+                    </div>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Size="Size.Small" Color="Color.Primary"
+                               Variant="@(AppState.EntidadeAtiva?.Id == entidade.Id ? Variant.Filled : Variant.Text)"
+                               OnClick="@(() => SelectEntidade(entidade))">
+                        @(AppState.EntidadeAtiva?.Id == entidade.Id ? "Ativa" : "Selecionar")
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private List<Entidade> _entidades = new();
+
+    protected override void OnInitialized()
+    {
+        _entidades = EntidadeService.GetAll();
+        if (AppState.EntidadeAtiva is null && _entidades.Count > 0)
+            AppState.SetEntidade(_entidades[0]);
+    }
+
+    private void SelectEntidade(Entidade entidade)
+    {
+        AppState.SetEntidade(entidade);
+    }
+}
