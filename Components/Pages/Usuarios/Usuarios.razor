@@ -1,0 +1,78 @@
+@page "/usuarios"
+@inject UsuarioService UsuarioService
+
+<PageTitle>Usuários — SindERP</PageTitle>
+
+<div class="d-flex align-center justify-space-between mb-4">
+    <MudText Typo="Typo.h5" Style="font-weight:600;">Usuários</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.PersonAdd">
+        Novo Usuário
+    </MudButton>
+</div>
+
+<MudCard Elevation="2" Class="rounded-xl">
+    <MudCardContent Class="pt-2">
+        <MudTable Items="_usuarios" Dense="false" Hover="true" Elevation="0">
+            <HeaderContent>
+                <MudTh>Usuário</MudTh>
+                <MudTh>E-mail</MudTh>
+                <MudTh>Entidades e Módulos</MudTh>
+                <MudTh>Último Acesso</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd>
+                    <div class="d-flex align-center gap-3">
+                        <MudAvatar Color="Color.Primary" Size="Size.Medium">
+                            @string.Concat(context.Nome.Split(' ').Take(2).Select(p => p[0]))
+                        </MudAvatar>
+                        <MudText Typo="Typo.body2" Style="font-weight:500;">@context.Nome</MudText>
+                    </div>
+                </MudTd>
+                <MudTd>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">@context.Email</MudText>
+                </MudTd>
+                <MudTd>
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach (var perm in context.Permissoes)
+                        {
+                            <MudTooltip Text="@string.Join(", ", perm.Modulos)">
+                                <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
+                                    @perm.NomeEntidade
+                                </MudChip>
+                            </MudTooltip>
+                        }
+                    </div>
+                </MudTd>
+                <MudTd>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @GetUltimoAcessoLabel(context.UltimoAcesso)
+                    </MudText>
+                </MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private List<Usuario> _usuarios = new();
+
+    protected override void OnInitialized()
+    {
+        _usuarios = UsuarioService.GetAll();
+    }
+
+    private static string GetUltimoAcessoLabel(DateTime dt)
+    {
+        var diff = DateTime.Now - dt;
+        return diff.TotalMinutes < 60
+            ? $"há {(int)diff.TotalMinutes} min"
+            : diff.TotalHours < 24
+                ? $"há {(int)diff.TotalHours}h"
+                : $"há {(int)diff.TotalDays} dias";
+    }
+}
