@@ -4,6 +4,7 @@ using BlazorTeste.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BlazorTeste.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260617130512_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -311,65 +314,6 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Fornecedores");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.GuiaSindical", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AnoReferencia")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Cnpj")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ContribuinteId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("DataEmissao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DataPagamento")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EntidadeId")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("Juros")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("LinhaDigitavel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Multa")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("NumeroDocumento")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RazaoSocialContribuinte")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("ValorBase")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<DateTime>("Vencimento")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GuiaSindicais");
-                });
-
             modelBuilder.Entity("BlazorTeste.Models.LancamentoFinanceiro", b =>
                 {
                     b.Property<int>("Id")
@@ -467,87 +411,6 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Processos");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.RegistroBaixa", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CobrancaId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("DataPagamento")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("DataProcessamento")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EntidadeId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Observacoes")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OperadorResponsavel")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RazaoSocialContribuinte")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("TipoBaixa")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TipoCobranca")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("ValorOriginal")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("ValorPago")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RegistrosBaixa");
-                });
-
-            modelBuilder.Entity("BlazorTeste.Models.Relatorio", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Categoria")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Descricao")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Formato")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Icone")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Nome")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Relatorios");
-                });
-
             modelBuilder.Entity("BlazorTeste.Models.Usuario", b =>
                 {
                     b.Property<int>("Id")
@@ -565,16 +428,6 @@ namespace BlazorTeste.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Permissoes")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RefreshToken")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("RefreshTokenExpiry")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("SenhaHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
