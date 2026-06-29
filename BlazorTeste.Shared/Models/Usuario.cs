@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace BlazorTeste.Models;
 
 public class Usuario
@@ -5,8 +7,11 @@ public class Usuario
     public int Id { get; set; }
     public string Nome { get; set; } = "";
     public string Email { get; set; } = "";
+    [JsonIgnore]
     public string SenhaHash { get; set; } = "";
+    [JsonIgnore]
     public string? RefreshToken { get; set; }
+    [JsonIgnore]
     public DateTime? RefreshTokenExpiry { get; set; }
     public DateTime UltimoAcesso { get; set; }
     public List<PermissaoEntidade> Permissoes { get; set; } = new();
