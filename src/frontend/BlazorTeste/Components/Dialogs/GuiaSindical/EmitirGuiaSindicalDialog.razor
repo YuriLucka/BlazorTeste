@@ -1,0 +1,241 @@
+@inject ContribuinteService ContribuinteService
+@inject AppStateService AppState
+
+<MudDialog Style="min-width:620px;">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Description" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">Emitir Guia Sindical</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <!-- Step indicators -->
+        <div class="d-flex align-center justify-center mb-4 gap-0">
+            @for (int i = 0; i < _stepLabels.Length; i++)
+            {
+                var si = i;
+                bool active = _step == si;
+                bool done = _step > si;
+                <div class="d-flex align-center">
+                    <div class="d-flex flex-column align-center" style="min-width:80px;">
+                        <MudAvatar Size="Size.Small"
+                                   Color="@(done ? Color.Success : active ? Color.Primary : Color.Default)"
+                                   Variant="@(active ? Variant.Filled : Variant.Outlined)"
+                                   Style="width:32px;height:32px;font-size:.85rem;">
+                            @if (done) { <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" /> }
+                            else { @(si + 1) }
+                        </MudAvatar>
+                        <MudText Typo="Typo.caption" Color="@(active ? Color.Primary : Color.Secondary)">
+                            @_stepLabels[si]
+                        </MudText>
+                    </div>
+                    @if (si < _stepLabels.Length - 1)
+                    {
+                        <MudDivider Style="width:40px;margin-bottom:18px;" />
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- STEP 1: Selecionar Contribuinte -->
+        @if (_step == 0)
+        {
+            <MudGrid Spacing="3">
+                <MudItem xs="12">
+                    <MudAutocomplete T="Contribuinte" Label="Contribuinte *" @bind-Value="_contribuinteSelecionado"
+                                     Variant="Variant.Outlined" Dense="false"
+                                     SearchFunc="BuscarContribuinte"
+                                     ToStringFunc="c => c?.RazaoSocial ?? string.Empty"
+                                     ResetValueOnEmptyText="true"
+                                     AdornmentIcon="@Icons.Material.Filled.Search"
+                                     Placeholder="Digite o nome ou CNPJ..."
+                                     NoItemsFoundText="Nenhum contribuinte encontrado" />
+                </MudItem>
+                @if (_contribuinteSelecionado is not null)
+                {
+                    <MudItem xs="12">
+                        <MudPaper Outlined="true" Class="pa-3 rounded-xl">
+                            <MudGrid Spacing="2">
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">CNPJ</MudText>
+                                    <MudText Typo="Typo.body2">@_contribuinteSelecionado.Cnpj</MudText>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Regime</MudText>
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Filled">
+                                        @_contribuinteSelecionado.RegimeTributario
+                                    </MudChip>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Capital Social</MudText>
+                                    <MudText Typo="Typo.body2">@_contribuinteSelecionado.CapitalSocial.ToString("C2")</MudText>
+                                </MudItem>
+                                <MudItem xs="6">
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">Situação</MudText>
+                                    <MudChip T="string" Size="Size.Small"
+                                             Color="@(_contribuinteSelecionado.Situacao == "Ativo" ? Color.Success : Color.Warning)"
+                                             Variant="Variant.Filled">
+                                        @_contribuinteSelecionado.Situacao
+                                    </MudChip>
+                                </MudItem>
+                            </MudGrid>
+                        </MudPaper>
+                    </MudItem>
+                }
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_anoReferencia" Label="Ano de Referência *"
+                                     Variant="Variant.Outlined" Min="2000" Max="2030" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" @bind-Value="_tipoEmissao" Label="Tipo de Emissão" Variant="Variant.Outlined">
+                        <MudSelectItem Value="@("Individual")">Individual</MudSelectItem>
+                        <MudSelectItem Value="@("Lote")">Em Lote (todos contribuintes)</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        }
+
+        <!-- STEP 2: Valores e Vencimento -->
+        @if (_step == 1)
+        {
+            <MudGrid Spacing="3">
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info" Dense="true">
+                        Valores calculados automaticamente com base no capital social e faixa de cobrança.
+                    </MudAlert>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_valorBase" Label="Valor Base (R$) *" Variant="Variant.Outlined"
+                                     Format="N2" Adornment="Adornment.Start" AdornmentText="R$"
+                                     HelperText="Calculado pela faixa de cobrança" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudDatePicker @bind-Date="_vencimento" Label="Data de Vencimento *"
+                                   Variant="Variant.Outlined" DateFormat="dd/MM/yyyy"
+                                   MinDate="DateTime.Today" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_multa" Label="Multa (%)" Variant="Variant.Outlined"
+                                     Format="N2" HelperText="Aplicada após carência" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_jurosDia" Label="Juros ao Dia (%)" Variant="Variant.Outlined"
+                                     Format="N3" HelperText="Calculado após vencimento" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_instrucoes" Label="Instruções do Boleto"
+                                  Variant="Variant.Outlined" Lines="2"
+                                  Placeholder="Ex: Após vencimento cobrar multa de 2% e juros de 0,033% ao dia." />
+                </MudItem>
+            </MudGrid>
+        }
+
+        <!-- STEP 3: Confirmação -->
+        @if (_step == 2)
+        {
+            <MudGrid Spacing="3">
+                <MudItem xs="12">
+                    <MudPaper Outlined="true" Class="pa-4 rounded-xl">
+                        <MudText Typo="Typo.subtitle2" Class="mb-3" Style="font-weight:700;">Resumo da Emissão</MudText>
+                        <MudGrid Spacing="2">
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuinte</MudText>
+                                <MudText Typo="Typo.body2" Style="font-weight:600;">@_contribuinteSelecionado?.RazaoSocial</MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Ano Referência</MudText>
+                                <MudText Typo="Typo.body2">@_anoReferencia</MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Valor Base</MudText>
+                                <MudText Typo="Typo.h6" Style="font-weight:700;">@_valorBase.ToString("C2")</MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Vencimento</MudText>
+                                <MudText Typo="Typo.body2">@(_vencimento?.ToString("dd/MM/yyyy") ?? "-")</MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Multa</MudText>
+                                <MudText Typo="Typo.body2">@_multa.ToString("N2")%</MudText>
+                            </MudItem>
+                            <MudItem xs="6">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Juros/dia</MudText>
+                                <MudText Typo="Typo.body2">@_jurosDia.ToString("N3")%</MudText>
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Success" Dense="true" Icon="@Icons.Material.Filled.CheckCircle">
+                        Guia pronta para emissão. Clique em <strong>Emitir</strong> para gerar o boleto.
+                    </MudAlert>
+                </MudItem>
+            </MudGrid>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())">Cancelar</MudButton>
+        <MudSpacer />
+        @if (_step > 0)
+        {
+            <MudButton OnClick="@(() => _step--)" StartIcon="@Icons.Material.Filled.ArrowBack" Variant="Variant.Outlined">
+                Anterior
+            </MudButton>
+        }
+        @if (_step < 2)
+        {
+            <MudButton OnClick="Avancar" EndIcon="@Icons.Material.Filled.ArrowForward"
+                       Variant="Variant.Filled" Color="Color.Primary"
+                       Disabled="@(_step == 0 && _contribuinteSelecionado is null)">
+                Próximo
+            </MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="Emitir" StartIcon="@Icons.Material.Filled.Send"
+                       Variant="Variant.Filled" Color="Color.Primary">
+                Emitir Guia
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+
+    private int _step = 0;
+    private static readonly string[] _stepLabels = { "Contribuinte", "Valores", "Confirmação" };
+
+    private Contribuinte? _contribuinteSelecionado;
+    private List<Contribuinte> _contribuintes = new();
+
+    private int _anoReferencia = DateTime.Now.Year;
+    private string _tipoEmissao = "Individual";
+    private decimal _valorBase = 0m;
+    private DateTime? _vencimento = new DateTime(DateTime.Now.Year, 7, 31);
+    private decimal _multa = 2m;
+    private decimal _jurosDia = 0.033m;
+    private string _instrucoes = "Após vencimento cobrar multa de 2% e juros de 0,033% ao dia.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _contribuintes = AppState.EntidadeAtiva is { } e
+            ? await ContribuinteService.GetByEntidadeAsync(e.Id)
+            : await ContribuinteService.GetAllAsync();
+    }
+
+    private Task<IEnumerable<Contribuinte>> BuscarContribuinte(string valor) =>
+        Task.FromResult(_contribuintes
+            .Where(c => string.IsNullOrEmpty(valor) ||
+                        c.RazaoSocial.Contains(valor, StringComparison.OrdinalIgnoreCase) ||
+                        c.Cnpj.Contains(valor, StringComparison.OrdinalIgnoreCase))
+            .AsEnumerable());
+
+    private void Avancar()
+    {
+        if (_step == 0 && _contribuinteSelecionado is null) return;
+        _step++;
+    }
+
+    private void Emitir() => MudDialog.Close(DialogResult.Ok(true));
+}

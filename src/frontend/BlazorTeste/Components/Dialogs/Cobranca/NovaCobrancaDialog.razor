@@ -1,0 +1,107 @@
+@inject ContribuinteService ContribuinteService
+@inject AppStateService AppState
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.RequestQuote" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">Nova Cobrança</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Spacing="3">
+            <MudItem xs="12">
+                <MudAutocomplete T="Contribuinte" Label="Contribuinte *" @bind-Value="_contribuinte"
+                                 Variant="Variant.Outlined"
+                                 SearchFunc="BuscarContribuinte"
+                                 ToStringFunc="c => c?.RazaoSocial ?? string.Empty"
+                                 AdornmentIcon="@Icons.Material.Filled.Search"
+                                 NoItemsFoundText="Nenhum contribuinte encontrado"
+                                 ResetValueOnEmptyText="true"
+                                 Required="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudSelect T="string" @bind-Value="_tipo" Label="Tipo de Cobrança *" Variant="Variant.Outlined" Required="true">
+                    <MudSelectItem Value="@("Sindical")">Contribuição Sindical</MudSelectItem>
+                    <MudSelectItem Value="@("Confederativa")">Contribuição Confederativa</MudSelectItem>
+                    <MudSelectItem Value="@("Associativa")">Contribuição Associativa</MudSelectItem>
+                    <MudSelectItem Value="@("Negocial")">Contribuição Negocial</MudSelectItem>
+                    <MudSelectItem Value="@("Evento")">Taxa de Evento</MudSelectItem>
+                    <MudSelectItem Value="@("Outra")">Outra</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField @bind-Value="_anoReferencia" Label="Ano de Referência"
+                                 Variant="Variant.Outlined" Min="2000" Max="2030" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField @bind-Value="_valor" Label="Valor (R$) *" Variant="Variant.Outlined"
+                                 Format="N2" Adornment="Adornment.Start" AdornmentText="R$"
+                                 Min="0.01m" Required="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudDatePicker @bind-Date="_vencimento" Label="Vencimento *" Variant="Variant.Outlined"
+                               DateFormat="dd/MM/yyyy" MinDate="DateTime.Today" Required="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField @bind-Value="_multa" Label="Multa (%)" Variant="Variant.Outlined"
+                                 Format="N2" HelperText="Padrão: 2,00%" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudNumericField @bind-Value="_jurosDia" Label="Juros ao Dia (%)" Variant="Variant.Outlined"
+                                 Format="N3" HelperText="Padrão: 0,033%" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_descricao" Label="Descrição / Histórico" Variant="Variant.Outlined"
+                              Lines="2" MaxLength="200" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudSwitch @bind-Value="_gerarBoleto" Color="Color.Primary"
+                           Label="Gerar boleto imediatamente após salvar" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())">Cancelar</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Salvar"
+                   StartIcon="@Icons.Material.Filled.Save">
+            Salvar Cobrança
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+
+    private Contribuinte? _contribuinte;
+    private string _tipo = "Sindical";
+    private int _anoReferencia = DateTime.Now.Year;
+    private decimal _valor = 0m;
+    private DateTime? _vencimento = new DateTime(DateTime.Now.Year, 7, 31);
+    private decimal _multa = 2m;
+    private decimal _jurosDia = 0.033m;
+    private string _descricao = "";
+    private bool _gerarBoleto = true;
+
+    private List<Contribuinte> _contribuintes = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _contribuintes = AppState.EntidadeAtiva is { } e
+            ? await ContribuinteService.GetByEntidadeAsync(e.Id)
+            : await ContribuinteService.GetAllAsync();
+    }
+
+    private Task<IEnumerable<Contribuinte>> BuscarContribuinte(string v) =>
+        Task.FromResult(_contribuintes
+            .Where(c => string.IsNullOrEmpty(v) ||
+                        c.RazaoSocial.Contains(v, StringComparison.OrdinalIgnoreCase) ||
+                        c.Cnpj.Contains(v, StringComparison.OrdinalIgnoreCase))
+            .AsEnumerable());
+
+    private void Salvar()
+    {
+        if (_contribuinte is null || _valor <= 0 || _vencimento is null) return;
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}

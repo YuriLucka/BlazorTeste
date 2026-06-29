@@ -7,7 +7,6 @@
 *.user
 *.userosscache
 *.sln.docstates
-*.userprefs
 
 # Build results
 [Dd]ebug/
@@ -31,14 +30,17 @@ bld/
 # MSTest test Results
 [Tt]est[Rr]esult*/
 [Bb]uild[Ll]og.*
-TestResults/
-coverage/
 
 # NuGet Packages
 *.nupkg
 *.snupkg
+# The packages folder can be checked in if you sign your packages
 packages/
+# except build/, which is used as an MSBuild target
 !packages/build/
+# Uncomment if necessary however generally it will be regenerated when needed
+#!packages/repositories.config
+# NuGet v3's project.json files produces more ignoreable files
 *.nuget.props
 *.nuget.targets
 
@@ -46,14 +48,3 @@ packages/
 project.lock.json
 project.fragment.lock.json
 artifacts/
-
-## Logs
-*.log
-
-## OS
-.DS_Store
-Thumbs.db
-
-## Secrets
-appsettings.*.json
-!appsettings.json

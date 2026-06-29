@@ -1,0 +1,262 @@
+@page "/eventos"
+@inject EventoService EventoService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Eventos — SindERP</PageTitle>
+
+<div class="d-flex align-center justify-space-between mb-4">
+    <div>
+        <MudText Typo="Typo.h5" Style="font-weight:600;">Eventos</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">@_filtered.Count eventos</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenNovoEvento">
+        Novo Evento
+    </MudButton>
+</div>
+
+<!-- Status Filter -->
+<div class="d-flex gap-2 flex-wrap mb-4">
+    @foreach (var f in new[] { "Todos", "Aberto", "Fechado", "Realizado", "Cancelado" })
+    {
+        <MudChip T="string" Color="@(_filtro == f ? Color.Primary : Color.Default)"
+                 Variant="@(_filtro == f ? Variant.Filled : Variant.Outlined)"
+                 OnClick="@(() => SetFiltro(f))">@f</MudChip>
+    }
+</div>
+
+<!-- Event Cards -->
+<MudGrid Spacing="3">
+    @foreach (var ev in _filtered)
+    {
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="2" Class="rounded-xl" Style="height:100%; display:flex; flex-direction:column;">
+                <MudCardContent Style="flex:1;">
+                    <div class="d-flex justify-space-between align-start mb-2">
+                        <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(ev.Status)" Variant="Variant.Filled">
+                            @ev.Status
+                        </MudChip>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @ev.DataInicio.ToString("dd/MM") - @ev.DataFim.ToString("dd/MM/yyyy")
+                        </MudText>
+                    </div>
+                    <MudText Typo="Typo.subtitle1" Style="font-weight:600;" Class="mb-1">@ev.Nome</MudText>
+                    <div class="d-flex align-center gap-1 mb-2">
+                        <MudIcon Icon="@Icons.Material.Filled.LocationOn" Size="Size.Small" Color="Color.Secondary" />
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@ev.Cidade/@ev.Estado</MudText>
+                    </div>
+                    @if (ev.TaxaInscricao > 0)
+                    {
+                        <MudText Typo="Typo.body2" Class="mb-2">
+                            Taxa: <strong>@ev.TaxaInscricao.ToString("C2")</strong>
+                        </MudText>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined" Class="mb-2">Gratuito</MudChip>
+                    }
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @ev.TotalInscritos / @ev.MaxParticipantes inscritos
+                    </MudText>
+                    <MudProgressLinear Value="@((ev.TotalInscritos * 100.0) / ev.MaxParticipantes)"
+                                       Color="@(ev.TotalInscritos >= ev.MaxParticipantes ? Color.Error : Color.Primary)"
+                                       Rounded="true" Size="Size.Small" Class="mt-1" />
+                </MudCardContent>
+                <MudCardActions>
+                    <MudButton Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined"
+                               OnClick="@(() => OpenDetail(ev))">
+                        Ver Detalhes
+                    </MudButton>
+                    @if (ev.Status == StatusEvento.Aberto)
+                    {
+                        <MudButton Size="Size.Small" Color="Color.Warning" Variant="Variant.Text"
+                                   OnClick="@(() => Snackbar.Add("Inscrições fechadas.", Severity.Warning))">
+                            Fechar Inscrições
+                        </MudButton>
+                    }
+                    @if (ev.Status == StatusEvento.Realizado)
+                    {
+                        <MudButton Size="Size.Small" Color="Color.Default" Variant="Variant.Text"
+                                   OnClick="@(() => Snackbar.Add("Gerando lista de presença...", Severity.Info))">
+                            Lista Presença
+                        </MudButton>
+                    }
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+<!-- Detail Drawer -->
+<MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.End" Elevation="4" Width="520px" Variant="DrawerVariant.Temporary">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+    @if (_selected is not null)
+    {
+        <MudDrawerHeader Class="pa-4">
+            <div class="d-flex align-center justify-space-between" style="width:100%;">
+                <div>
+                    <MudText Typo="Typo.subtitle1" Style="font-weight:600;">@_selected.Nome</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                        @_selected.DataInicio.ToString("dd/MM/yyyy") · @_selected.Local
+                    </MudText>
+                </div>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="@(() => _drawerOpen = false)" />
+            </div>
+        </MudDrawerHeader>
+        <MudDivider />
+        <div class="pa-4" style="flex:1;overflow-y:auto;">
+            <MudTabs Elevation="0">
+                <MudTabPanel Text="Detalhes">
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Descrição</MudText>
+                            <MudText Typo="Typo.body2">@_selected.Descricao</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Início</MudText>
+                            <MudText Typo="Typo.body2">@_selected.DataInicio.ToString("dd/MM/yyyy")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Término</MudText>
+                            <MudText Typo="Typo.body2">@_selected.DataFim.ToString("dd/MM/yyyy")</MudText>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Local</MudText>
+                            <MudText Typo="Typo.body2">@_selected.Local — @_selected.Cidade/@_selected.Estado</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Máx. Participantes</MudText>
+                            <MudText Typo="Typo.body2">@_selected.MaxParticipantes</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Taxa Inscrição</MudText>
+                            <MudText Typo="Typo.body2">@(_selected.TaxaInscricao > 0 ? _selected.TaxaInscricao.ToString("C2") : "Gratuito")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(_selected.Status)" Variant="Variant.Filled">
+                                @_selected.Status
+                            </MudChip>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Inscritos</MudText>
+                            <MudText Typo="Typo.body2">@_selected.TotalInscritos / @_selected.MaxParticipantes</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Inscrições" BadgeData="@_selected.TotalInscritos">
+                    <div class="d-flex gap-2 mb-3">
+                        <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Outlined">
+                            @_selected.Inscricoes.Count(i => i.Pago) pagos
+                        </MudChip>
+                        <MudChip T="string" Size="Size.Small" Color="Color.Warning" Variant="Variant.Outlined">
+                            @_selected.Inscricoes.Count(i => !i.Pago) pendentes
+                        </MudChip>
+                    </div>
+                    <MudTable T="InscricaoEvento" Items="_selected.Inscricoes" Dense="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Participante</MudTh>
+                            <MudTh>Empresa</MudTh>
+                            <MudTh>Hospedagem</MudTh>
+                            <MudTh>Pago</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>
+                                <MudText Typo="Typo.body2" Style="font-weight:600;">@context.NomeParticipante</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">@context.Cargo</MudText>
+                            </MudTd>
+                            <MudTd>@context.Empresa</MudTd>
+                            <MudTd><MudText Typo="Typo.caption">@context.TipoHospedagem</MudText></MudTd>
+                            <MudTd>
+                                @if (context.Pago)
+                                { <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Size="Size.Small" /> }
+                                else
+                                { <MudIcon Icon="@Icons.Material.Filled.Schedule" Color="Color.Warning" Size="Size.Small" /> }
+                            </MudTd>
+                        </RowTemplate>
+                        <NoRecordsContent>
+                            <MudText Color="Color.Secondary" Class="pa-4">Nenhuma inscrição.</MudText>
+                        </NoRecordsContent>
+                    </MudTable>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Financeiro">
+                    <MudGrid Spacing="2" Class="mb-3">
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Receita Prevista</MudText>
+                            <MudText Typo="Typo.subtitle2" Style="font-weight:600;">
+                                @((_selected.MaxParticipantes * _selected.TaxaInscricao).ToString("C2"))
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Receita Real</MudText>
+                            <MudText Typo="Typo.subtitle2" Style="font-weight:600; color:var(--mud-palette-success);">
+                                @((_selected.Inscricoes.Count(i => i.Pago) * _selected.TaxaInscricao).ToString("C2"))
+                            </MudText>
+                        </MudItem>
+                    </MudGrid>
+                    @if (_selected.Inscricoes.Any())
+                    {
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Pagamentos recebidos</MudText>
+                        <MudTable T="InscricaoEvento" Items="_selected.Inscricoes.Where(i => i.Pago).ToList()" Dense="true" Elevation="0">
+                            <HeaderContent>
+                                <MudTh>Participante</MudTh>
+                                <MudTh>Data Insc.</MudTh>
+                                <MudTh>Valor</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>@context.NomeParticipante</MudTd>
+                                <MudTd>@context.DataInscricao.ToString("dd/MM/yyyy")</MudTd>
+                                <MudTd>@_selected.TaxaInscricao.ToString("C2")</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                </MudTabPanel>
+            </MudTabs>
+        </div>
+    }
+    </div>
+</MudDrawer>
+
+@code {
+    private List<Evento> _all = new();
+    private List<Evento> _filtered = new();
+    private string _filtro = "Todos";
+    private Evento? _selected;
+    private bool _drawerOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _all = await EventoService.GetAllAsync();
+        _filtered = _all;
+    }
+
+    private void SetFiltro(string filtro)
+    {
+        _filtro = filtro;
+        _filtered = filtro == "Todos"
+            ? _all
+            : _all.Where(e => e.Status.ToString() == filtro).ToList();
+    }
+
+    private void OpenDetail(Evento ev) { _selected = ev; _drawerOpen = true; }
+
+    private Color GetStatusColor(StatusEvento s) => s switch
+    {
+        StatusEvento.Aberto => Color.Success,
+        StatusEvento.Fechado => Color.Warning,
+        StatusEvento.Realizado => Color.Primary,
+        _ => Color.Default
+    };
+
+    private async Task OpenNovoEvento()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium };
+        var dialog = await DialogService.ShowAsync<BlazorTeste.Components.Dialogs.Evento.NovoEventoDialog>("Novo Evento", options);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+            Snackbar.Add("Evento criado com sucesso!", Severity.Success);
+    }
+}

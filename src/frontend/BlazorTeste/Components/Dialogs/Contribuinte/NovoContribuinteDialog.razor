@@ -1,0 +1,322 @@
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Business" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">@(IsEdicao ? "Editar Contribuinte" : "Novo Contribuinte")</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudTabs Elevation="0" @bind-ActivePanelIndex="_tab" PanelClass="pt-4">
+
+            <!-- DADOS GERAIS -->
+            <MudTabPanel Text="Dados Gerais" Icon="@Icons.Material.Filled.Info">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="5">
+                        <MudTextField @bind-Value="_cnpj" Label="CNPJ *" Variant="Variant.Outlined"
+                                      Mask="@(new PatternMask("00.000.000/0000-00"))"
+                                      Placeholder="00.000.000/0000-00"
+                                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Badge"
+                                      Required="true" RequiredError="CNPJ é obrigatório" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_ie" Label="Inscrição Estadual" Variant="Variant.Outlined" />
+                    </MudItem>
+                    <MudItem xs="12" sm="3">
+                        <MudSwitch @bind-Value="_situacao" Color="Color.Success" Label="@(_situacao ? "Ativo" : "Inativo")" />
+                    </MudItem>
+                    <MudItem xs="12">
+                        <MudTextField @bind-Value="_razaoSocial" Label="Razão Social *" Variant="Variant.Outlined"
+                                      MaxLength="60" Required="true" RequiredError="Razão Social é obrigatória"
+                                      Counter="60" />
+                    </MudItem>
+                    <MudItem xs="12" sm="8">
+                        <MudTextField @bind-Value="_fantasia" Label="Nome Fantasia" Variant="Variant.Outlined"
+                                      MaxLength="60" Counter="60" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudSelect T="string" @bind-Value="_porte" Label="Porte" Variant="Variant.Outlined">
+                            <MudSelectItem Value="@("ME")">ME — Microempresa</MudSelectItem>
+                            <MudSelectItem Value="@("EPP")">EPP — Pequeno Porte</MudSelectItem>
+                            <MudSelectItem Value="@("Médio")">Médio Porte</MudSelectItem>
+                            <MudSelectItem Value="@("Grande")">Grande Porte</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_email" Label="E-mail" Variant="Variant.Outlined"
+                                      InputType="InputType.Email" MaxLength="60"
+                                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Email" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField @bind-Value="_atividadeEconomica" Label="Atividade Econômica (CNAE)"
+                                      Variant="Variant.Outlined" Placeholder="Ex: 55.10-8 - Hotéis e similares" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="_capitalSocial" Label="Capital Social (R$)" Variant="Variant.Outlined"
+                                         Format="N2" Adornment="Adornment.Start" AdornmentText="R$" Min="0" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField @bind-Value="_numFuncionarios" Label="Nº de Funcionários" Variant="Variant.Outlined" Min="0" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudDatePicker @bind-Date="_dataFundacao" Label="Data de Fundação" Variant="Variant.Outlined"
+                                       DateFormat="dd/MM/yyyy" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="string" @bind-Value="_tipoContribuinte" Label="Tipo" Variant="Variant.Outlined">
+                            <MudSelectItem Value="@("Contribuinte")">Contribuinte</MudSelectItem>
+                            <MudSelectItem Value="@("Associado")">Associado</MudSelectItem>
+                            <MudSelectItem Value="@("Ambos")">Contribuinte e Associado</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+            <!-- ENDEREÇO -->
+            <MudTabPanel Text="Endereço" Icon="@Icons.Material.Filled.LocationOn">
+                <MudGrid Spacing="3">
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_cep" Label="CEP *" Variant="Variant.Outlined"
+                                      Mask="@(new PatternMask("00000-000"))"
+                                      Placeholder="00000-000" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="8">
+                        <MudTextField @bind-Value="_logradouro" Label="Logradouro (Rua/Av) *" Variant="Variant.Outlined"
+                                      MaxLength="60" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="3">
+                        <MudTextField @bind-Value="_numero" Label="Número" Variant="Variant.Outlined" MaxLength="20" />
+                    </MudItem>
+                    <MudItem xs="12" sm="4">
+                        <MudTextField @bind-Value="_complemento" Label="Complemento" Variant="Variant.Outlined" MaxLength="30" />
+                    </MudItem>
+                    <MudItem xs="12" sm="5">
+                        <MudTextField @bind-Value="_bairro" Label="Bairro *" Variant="Variant.Outlined" MaxLength="60" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="7">
+                        <MudTextField @bind-Value="_cidade" Label="Cidade *" Variant="Variant.Outlined" MaxLength="60" Required="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="3">
+                        <MudSelect T="string" @bind-Value="_uf" Label="UF *" Variant="Variant.Outlined">
+                            @foreach (var uf in _ufs)
+                            {
+                                <MudSelectItem Value="@uf">@uf</MudSelectItem>
+                            }
+                        </MudSelect>
+                    </MudItem>
+                    <MudItem xs="12" sm="2">
+                        <MudSelect T="string" @bind-Value="_tipoEndereco" Label="Tipo" Variant="Variant.Outlined">
+                            <MudSelectItem Value="@("Estabelecimento")">Estabelecimento</MudSelectItem>
+                            <MudSelectItem Value="@("Cobrança")">Cobrança</MudSelectItem>
+                            <MudSelectItem Value="@("Correspondência")">Correspondência</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+            </MudTabPanel>
+
+            <!-- CONTATOS -->
+            <MudTabPanel Text="Contatos" Icon="@Icons.Material.Filled.Contacts">
+                <div class="d-flex justify-end mb-3">
+                    <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                               Variant="Variant.Outlined" Color="Color.Primary" OnClick="AddContato">
+                        Adicionar Contato
+                    </MudButton>
+                </div>
+
+                @if (!_contatos.Any())
+                {
+                    <MudAlert Severity="Severity.Normal" Dense="true">
+                        Nenhum contato cadastrado. Clique em "Adicionar Contato".
+                    </MudAlert>
+                }
+
+                @for (int i = 0; i < _contatos.Count; i++)
+                {
+                    var idx = i;
+                    var c = _contatos[idx];
+                    <MudPaper Outlined="true" Class="pa-3 mb-3 rounded-xl">
+                        <div class="d-flex justify-space-between align-center mb-2">
+                            <MudText Typo="Typo.subtitle2">Contato @(idx + 1)</MudText>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                           OnClick="@(() => RemoveContato(idx))" />
+                        </div>
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="c.Nome" Label="Nome *" Variant="Variant.Outlined"
+                                              Dense="true" MaxLength="60" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="c.Cargo" Label="Cargo" Variant="Variant.Outlined"
+                                              Dense="true" MaxLength="60" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudSelect T="string" @bind-Value="c.Tipo" Label="Tipo" Variant="Variant.Outlined" Dense="true">
+                                    <MudSelectItem Value="@("Telefone")">Telefone</MudSelectItem>
+                                    <MudSelectItem Value="@("Celular")">Celular</MudSelectItem>
+                                    <MudSelectItem Value="@("WhatsApp")">WhatsApp</MudSelectItem>
+                                    <MudSelectItem Value="@("Fax")">Fax</MudSelectItem>
+                                </MudSelect>
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudTextField @bind-Value="c.Numero" Label="Telefone *" Variant="Variant.Outlined"
+                                              Dense="true" MaxLength="20"
+                                              Mask="@(new PatternMask("(00) 00000-0000"))" />
+                            </MudItem>
+                            <MudItem xs="12" sm="4">
+                                <MudTextField @bind-Value="c.Email" Label="E-mail" Variant="Variant.Outlined"
+                                              Dense="true" InputType="InputType.Email" MaxLength="60" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                }
+            </MudTabPanel>
+
+            <!-- SÓCIOS -->
+            <MudTabPanel Text="Sócios" Icon="@Icons.Material.Filled.People">
+                <div class="d-flex justify-end mb-3">
+                    <MudButton StartIcon="@Icons.Material.Filled.Add" Size="Size.Small"
+                               Variant="Variant.Outlined" Color="Color.Primary" OnClick="AddSocio">
+                        Adicionar Sócio
+                    </MudButton>
+                </div>
+
+                @if (!_socios.Any())
+                {
+                    <MudAlert Severity="Severity.Normal" Dense="true">
+                        Nenhum sócio cadastrado. Clique em "Adicionar Sócio".
+                    </MudAlert>
+                }
+
+                @for (int i = 0; i < _socios.Count; i++)
+                {
+                    var idx = i;
+                    var s = _socios[idx];
+                    <MudPaper Outlined="true" Class="pa-3 mb-3 rounded-xl">
+                        <div class="d-flex justify-space-between align-center mb-2">
+                            <MudText Typo="Typo.subtitle2">Sócio @(idx + 1)</MudText>
+                            <MudIconButton Icon="@Icons.Material.Filled.Delete" Size="Size.Small" Color="Color.Error"
+                                           OnClick="@(() => RemoveSocio(idx))" />
+                        </div>
+                        <MudGrid Spacing="2">
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="s.Nome" Label="Nome *" Variant="Variant.Outlined" Dense="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="s.Cpf" Label="CPF" Variant="Variant.Outlined"
+                                              Dense="true" Mask="@(new PatternMask("000.000.000-00"))" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="s.Cargo" Label="Cargo/Função" Variant="Variant.Outlined" Dense="true" />
+                            </MudItem>
+                            <MudItem xs="12" sm="6">
+                                <MudTextField @bind-Value="s.Email" Label="E-mail" Variant="Variant.Outlined"
+                                              Dense="true" InputType="InputType.Email" />
+                            </MudItem>
+                        </MudGrid>
+                    </MudPaper>
+                }
+            </MudTabPanel>
+
+        </MudTabs>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudSpacer />
+        @if (_tab > 0)
+        {
+            <MudButton OnClick="@(() => _tab--)" StartIcon="@Icons.Material.Filled.ArrowBack" Variant="Variant.Outlined">
+                Anterior
+            </MudButton>
+        }
+        @if (_tab < 3)
+        {
+            <MudButton OnClick="@(() => _tab++)" EndIcon="@Icons.Material.Filled.ArrowForward"
+                       Variant="Variant.Filled" Color="Color.Primary">
+                Próximo
+            </MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="Submit" StartIcon="@Icons.Material.Filled.Save"
+                       Variant="Variant.Filled" Color="Color.Primary">
+                Salvar
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+    [Parameter] public bool IsEdicao { get; set; }
+
+    private int _tab = 0;
+
+    // Dados gerais
+    private string _cnpj = "";
+    private string _razaoSocial = "";
+    private string _fantasia = "";
+    private string _ie = "";
+    private string _email = "";
+    private string _atividadeEconomica = "";
+    private string _porte = "ME";
+    private string _tipoContribuinte = "Contribuinte";
+    private decimal _capitalSocial = 0;
+    private int _numFuncionarios = 0;
+    private DateTime? _dataFundacao;
+    private bool _situacao = true;
+
+    // Endereço
+    private string _cep = "";
+    private string _logradouro = "";
+    private string _numero = "";
+    private string _complemento = "";
+    private string _bairro = "";
+    private string _cidade = "";
+    private string _uf = "SP";
+    private string _tipoEndereco = "Estabelecimento";
+
+    // Coleções
+    private List<ContatoForm> _contatos = new();
+    private List<SocioForm> _socios = new();
+
+    private static readonly string[] _ufs = {
+        "AC","AL","AM","AP","BA","CE","DF","ES","GO","MA","MG","MS","MT",
+        "PA","PB","PE","PI","PR","RJ","RN","RO","RR","RS","SC","SE","SP","TO"
+    };
+
+    private void Cancel() => MudDialog.Cancel();
+
+    private void Submit()
+    {
+        if (string.IsNullOrWhiteSpace(_razaoSocial))
+        {
+            Snackbar.Add("Razão Social é obrigatória.", Severity.Warning);
+            _tab = 0;
+            return;
+        }
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+
+    private void AddContato() => _contatos.Add(new ContatoForm());
+    private void RemoveContato(int i) => _contatos.RemoveAt(i);
+    private void AddSocio() => _socios.Add(new SocioForm());
+    private void RemoveSocio(int i) => _socios.RemoveAt(i);
+
+    private class ContatoForm
+    {
+        public string Nome { get; set; } = "";
+        public string Cargo { get; set; } = "";
+        public string Tipo { get; set; } = "Telefone";
+        public string Numero { get; set; } = "";
+        public string Email { get; set; } = "";
+    }
+
+    private class SocioForm
+    {
+        public string Nome { get; set; } = "";
+        public string Cpf { get; set; } = "";
+        public string Cargo { get; set; } = "";
+        public string Email { get; set; } = "";
+    }
+}

@@ -1,0 +1,321 @@
+@page "/negociacao"
+@using BlazorTeste.Components.Dialogs.Negociacao
+@inject NegociacaoService NegociacaoService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Negociação — SindERP</PageTitle>
+
+<!-- KPI Cards -->
+<MudGrid Spacing="3" Class="mb-4">
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center justify-space-between">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Em Andamento</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700;">@_emAndamento.Count</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.Sync" Color="Color.Info" Style="font-size:2.2rem;" />
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center justify-space-between">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Concluídas</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700;">@_concluidas.Count</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Style="font-size:2.2rem;" />
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center justify-space-between">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Inadimplentes</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700; color:var(--mud-palette-error);">@_inadimplentes.Count</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" Style="font-size:2.2rem;" />
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center justify-space-between">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Débito Total</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700;">@_all.Sum(n => n.DebitoOriginal).ToString("C2")</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Color="Color.Warning" Style="font-size:2.2rem;" />
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+<!-- Header -->
+<div class="d-flex align-center justify-space-between mb-4">
+    <div>
+        <MudText Typo="Typo.h5" Style="font-weight:600;">Negociação</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">@_all.Count negociações</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenNovaNegociacao">
+        Nova Negociação
+    </MudButton>
+</div>
+
+<!-- Main Card -->
+<MudCard Elevation="2" Class="rounded-xl">
+    <MudCardContent Class="pt-0">
+        <MudTabs Elevation="0" PanelClass="pt-3">
+            <MudTabPanel Text="Em Andamento" BadgeData="@_emAndamento.Count" BadgeColor="Color.Info">
+                @NegTable(_emAndamento)
+            </MudTabPanel>
+            <MudTabPanel Text="Concluídas" BadgeData="@_concluidas.Count" BadgeColor="Color.Success">
+                @NegTable(_concluidas)
+            </MudTabPanel>
+            <MudTabPanel Text="Inadimplentes" BadgeData="@_inadimplentes.Count" BadgeColor="Color.Error">
+                @NegTable(_inadimplentes)
+            </MudTabPanel>
+            <MudTabPanel Text="Canceladas" BadgeData="@_canceladas.Count" BadgeColor="Color.Default">
+                @NegTable(_canceladas)
+            </MudTabPanel>
+        </MudTabs>
+    </MudCardContent>
+</MudCard>
+
+<!-- Detail Drawer -->
+<MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.End" Elevation="4" Width="520px" Variant="DrawerVariant.Temporary">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+    @if (_selected is not null)
+    {
+        <MudDrawerHeader Class="pa-4">
+            <div class="d-flex align-center justify-space-between" style="width:100%;">
+                <div>
+                    <MudText Typo="Typo.subtitle1" Style="font-weight:600;">Negociação #@_selected.Id</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">@_selected.RazaoSocialContribuinte</MudText>
+                </div>
+                <div class="d-flex align-center gap-2">
+                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(_selected.Status)" Variant="Variant.Filled">
+                        @GetStatusText(_selected.Status)
+                    </MudChip>
+                    <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="@(() => _drawerOpen = false)" />
+                </div>
+            </div>
+        </MudDrawerHeader>
+        <MudDivider />
+        <div class="pa-4" style="flex:1;overflow-y:auto;">
+            <MudTabs Elevation="0">
+                <MudTabPanel Text="Resumo">
+                    <MudAlert Severity="@GetStatusSeverity(_selected.Status)" Class="mb-3" Dense="true">
+                        Aberta em @_selected.DataAbertura.ToString("dd/MM/yyyy")
+                        @if (_selected.DataConclusao.HasValue)
+                        { <text> · Concluída em @_selected.DataConclusao.Value.ToString("dd/MM/yyyy")</text> }
+                    </MudAlert>
+
+                    <MudSimpleTable Dense="true" Class="mb-3">
+                        <thead>
+                            <tr>
+                                <th>Tipo</th>
+                                <th>Ano</th>
+                                <th style="text-align:right">Valor Original</th>
+                                <th style="text-align:right">Encargos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in _selected.CobrancasOriginais)
+                            {
+                                <tr>
+                                    <td>@c.Tipo</td>
+                                    <td>@c.AnoReferencia</td>
+                                    <td style="text-align:right">@c.ValorOriginal.ToString("C2")</td>
+                                    <td style="text-align:right">@((c.Multa + c.Juros).ToString("C2"))</td>
+                                </tr>
+                            }
+                            <tr style="font-weight:700; background:var(--mud-palette-background-grey)">
+                                <td colspan="2">Total</td>
+                                <td style="text-align:right">@_selected.DebitoOriginal.ToString("C2")</td>
+                                <td style="text-align:right">@_selected.CobrancasOriginais.Sum(c => c.Multa + c.Juros).ToString("C2")</td>
+                            </tr>
+                        </tbody>
+                    </MudSimpleTable>
+
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Débito Original</MudText>
+                            <MudText Typo="Typo.subtitle2" Style="font-weight:600;">@_selected.DebitoOriginal.ToString("C2")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Desconto</MudText>
+                            <MudText Typo="Typo.subtitle2" Style="color:var(--mud-palette-success); font-weight:600;">
+                                -@_selected.Desconto.ToString("C2")
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Valor Negociado</MudText>
+                            <MudText Typo="Typo.h6" Style="font-weight:700;">@_selected.ValorNegociado.ToString("C2")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Parcelas</MudText>
+                            <MudText Typo="Typo.subtitle2">@_selected.NumeroParcelas x @((_selected.ValorNegociado / _selected.NumeroParcelas).ToString("C2"))</MudText>
+                        </MudItem>
+                    </MudGrid>
+
+                    @if (!string.IsNullOrEmpty(_selected.Observacoes))
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mt-3">Observações</MudText>
+                        <MudText Typo="Typo.body2">@_selected.Observacoes</MudText>
+                    }
+                </MudTabPanel>
+
+                <MudTabPanel Text="Parcelas" BadgeData="@_selected.Parcelas.Count">
+                    <div class="mb-2">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @_selected.Parcelas.Count(p => p.Pago) de @_selected.Parcelas.Count parcelas pagas
+                        </MudText>
+                        <MudProgressLinear Value="@((_selected.Parcelas.Count(p => p.Pago) * 100.0) / _selected.Parcelas.Count)"
+                                           Color="Color.Success" Rounded="true" Size="Size.Small" Class="mt-1" />
+                    </div>
+                    <MudTable T="ParcelaNegociacao" Items="_selected.Parcelas" Dense="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Nº</MudTh>
+                            <MudTh>Vencimento</MudTh>
+                            <MudTh>Valor</MudTh>
+                            <MudTh>Status</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Numero</MudTd>
+                            <MudTd>@context.Vencimento.ToString("dd/MM/yyyy")</MudTd>
+                            <MudTd><strong>@context.Valor.ToString("C2")</strong></MudTd>
+                            <MudTd>
+                                @if (context.Pago)
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">Paga</MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">Pendente</MudChip>
+                                }
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Cobranças Orig.">
+                    <MudTable T="CobrancaOriginalNeg" Items="_selected.CobrancasOriginais" Dense="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Tipo</MudTh>
+                            <MudTh>Ano</MudTh>
+                            <MudTh>Valor</MudTh>
+                            <MudTh>Multa+Juros</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Tipo</MudTd>
+                            <MudTd>@context.AnoReferencia</MudTd>
+                            <MudTd>@context.ValorOriginal.ToString("C2")</MudTd>
+                            <MudTd Style="color:var(--mud-palette-error);">@((context.Multa + context.Juros).ToString("C2"))</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudTabPanel>
+            </MudTabs>
+        </div>
+    }
+    </div>
+</MudDrawer>
+
+@code {
+    private List<Negociacao> _all = new();
+    private List<Negociacao> _emAndamento = new();
+    private List<Negociacao> _concluidas = new();
+    private List<Negociacao> _inadimplentes = new();
+    private List<Negociacao> _canceladas = new();
+    private Negociacao? _selected;
+    private bool _drawerOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _all = await NegociacaoService.GetAllAsync();
+        _emAndamento = _all.Where(n => n.Status == StatusNegociacao.EmAndamento).ToList();
+        _concluidas = _all.Where(n => n.Status == StatusNegociacao.Concluida).ToList();
+        _inadimplentes = _all.Where(n => n.Status == StatusNegociacao.Inadimplente).ToList();
+        _canceladas = _all.Where(n => n.Status == StatusNegociacao.Cancelada).ToList();
+    }
+
+    private void OpenDetail(Negociacao item) { _selected = item; _drawerOpen = true; }
+
+    private Color GetStatusColor(StatusNegociacao s) => s switch
+    {
+        StatusNegociacao.EmAndamento => Color.Info,
+        StatusNegociacao.Concluida => Color.Success,
+        StatusNegociacao.Inadimplente => Color.Error,
+        _ => Color.Default
+    };
+
+    private string GetStatusText(StatusNegociacao s) => s switch
+    {
+        StatusNegociacao.EmAndamento => "Em Andamento",
+        StatusNegociacao.Concluida => "Concluída",
+        StatusNegociacao.Inadimplente => "Inadimplente",
+        _ => "Cancelada"
+    };
+
+    private Severity GetStatusSeverity(StatusNegociacao s) => s switch
+    {
+        StatusNegociacao.EmAndamento => Severity.Info,
+        StatusNegociacao.Concluida => Severity.Success,
+        StatusNegociacao.Inadimplente => Severity.Error,
+        _ => Severity.Normal
+    };
+
+    private RenderFragment NegTable(List<Negociacao> items) => __builder =>
+    {
+        <MudTable T="Negociacao" Items="items" Dense="true" Hover="true" Elevation="0"
+                  RowClassFunc="@((_, _) => "cursor-pointer")"
+                  OnRowClick="@((TableRowClickEventArgs<Negociacao> r) => OpenDetail(r.Item))">
+            <HeaderContent>
+                <MudTh>Contribuinte</MudTh>
+                <MudTh>Abertura</MudTh>
+                <MudTh>Débito Original</MudTh>
+                <MudTh>Desconto</MudTh>
+                <MudTh>Valor Neg.</MudTh>
+                <MudTh>Parcelas</MudTh>
+                <MudTh>Status</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd><MudText Style="font-weight:600;">@context.RazaoSocialContribuinte</MudText></MudTd>
+                <MudTd>@context.DataAbertura.ToString("dd/MM/yyyy")</MudTd>
+                <MudTd>@context.DebitoOriginal.ToString("C2")</MudTd>
+                <MudTd Style="color:var(--mud-palette-success);">-@context.Desconto.ToString("C2")</MudTd>
+                <MudTd><strong>@context.ValorNegociado.ToString("C2")</strong></MudTd>
+                <MudTd>@context.NumeroParcelas x</MudTd>
+                <MudTd>
+                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Filled">
+                        @GetStatusText(context.Status)
+                    </MudChip>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Color="Color.Secondary" Class="pa-4">Nenhum registro.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    };
+
+    private async Task OpenNovaNegociacao()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium };
+        var dialog = await DialogService.ShowAsync<NovaNegociacaoDialog>("Nova Negociação", options);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+            Snackbar.Add("Negociação criada com sucesso!", Severity.Success);
+    }
+}

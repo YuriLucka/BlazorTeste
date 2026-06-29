@@ -1,0 +1,197 @@
+@page "/relatorios"
+@inject RelatorioService RelatorioService
+@inject ISnackbar Snackbar
+
+<PageTitle>Relatórios — SindERP</PageTitle>
+
+<div class="d-flex align-center justify-space-between mb-4">
+    <div>
+        <MudText Typo="Typo.h5" Style="font-weight:600;">Relatórios</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Central de relatórios</MudText>
+    </div>
+</div>
+
+<MudGrid Spacing="3">
+    <!-- Sidebar -->
+    <MudItem xs="12" md="3">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardContent Class="pa-3">
+                <MudText Typo="Typo.overline" Color="Color.Secondary" Class="pb-1">Categorias</MudText>
+                @foreach (var cat in _categorias)
+                {
+                    var count = cat == "Todos" ? _all.Count : _all.Count(r => r.Categoria.ToString() == cat);
+                    <div class="d-flex align-center justify-space-between pa-2 rounded cursor-pointer"
+                         style="@(_catAtiva == cat ? "background:var(--mud-palette-primary); color:white;" : "")"
+                         @onclick="@(() => SetCategoria(cat))">
+                        <div class="d-flex align-center gap-2">
+                            <MudIcon Icon="@GetCatIcon(cat)" Size="Size.Small" />
+                            <MudText Typo="Typo.body2">@GetCatLabel(cat)</MudText>
+                        </div>
+                        <MudChip T="string" Size="Size.Small" Color="@(_catAtiva == cat ? Color.Surface : Color.Default)">@count</MudChip>
+                    </div>
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <!-- Report Grid -->
+    <MudItem xs="12" md="9">
+        <MudTextField @bind-Value="_search" Placeholder="Buscar relatório..." Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search" Variant="Variant.Outlined"
+                      Immediate="true" Class="mb-3" />
+
+        <MudGrid Spacing="2">
+            @foreach (var r in _filtered)
+            {
+                <MudItem xs="12" sm="6" md="4">
+                    <MudCard Elevation="1" Class="rounded-xl cursor-pointer" Style="height:100%; display:flex; flex-direction:column;"
+                             @onclick="@(() => OpenConfig(r))">
+                        <MudCardContent Style="flex:1;">
+                            <div class="d-flex align-center gap-2 mb-2">
+                                <MudIcon Icon="@GetCatIconByRel(r)" Color="Color.Primary" />
+                                <MudChip T="string" Size="Size.Small" Color="Color.Default" Variant="Variant.Outlined">
+                                    @GetCatLabel(r.Categoria.ToString())
+                                </MudChip>
+                            </div>
+                            <MudText Typo="Typo.subtitle2" Style="font-weight:600;" Class="mb-1">@r.Nome</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@r.Descricao</MudText>
+                        </MudCardContent>
+                        <MudCardActions>
+                            @if (r.Formato == FormatoRelatorio.PDF || r.Formato == FormatoRelatorio.Ambos)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Error" Variant="Variant.Filled">PDF</MudChip>
+                            }
+                            @if (r.Formato == FormatoRelatorio.Excel || r.Formato == FormatoRelatorio.Ambos)
+                            {
+                                <MudChip T="string" Size="Size.Small" Color="Color.Success" Variant="Variant.Filled">Excel</MudChip>
+                            }
+                            <MudSpacer />
+                            <MudIconButton Icon="@Icons.Material.Filled.Settings" Size="Size.Small" Color="Color.Default" />
+                        </MudCardActions>
+                    </MudCard>
+                </MudItem>
+            }
+        </MudGrid>
+    </MudItem>
+</MudGrid>
+
+<!-- Config / Filter Drawer -->
+<MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.End" Elevation="4" Width="400px" Variant="DrawerVariant.Temporary">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+    @if (_selectedRel is not null)
+    {
+        <MudDrawerHeader Class="pa-4">
+            <div class="d-flex align-center justify-space-between" style="width:100%;">
+                <div>
+                    <MudText Typo="Typo.subtitle1" Style="font-weight:600;">@_selectedRel.Nome</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Configurar filtros</MudText>
+                </div>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="@(() => _drawerOpen = false)" />
+            </div>
+        </MudDrawerHeader>
+        <MudDivider />
+        <div class="pa-4 d-flex flex-column gap-3" style="flex:1;overflow-y:auto;">
+            <MudDateRangePicker Label="Período" DateRange="_dateRange" DateRangeChanged="@(dr => _dateRange = dr)"
+                                Variant="Variant.Outlined" />
+
+            <MudSelect T="string" Label="Contribuinte" Variant="Variant.Outlined" Value="@_filtroContribuinte"
+                       ValueChanged="@(v => _filtroContribuinte = v)">
+                <MudSelectItem Value="@("")">Todos</MudSelectItem>
+                <MudSelectItem Value="@("Hotel Paulista S/A")">Hotel Paulista S/A</MudSelectItem>
+                <MudSelectItem Value="@("Restaurante Bella Vista Ltda")">Restaurante Bella Vista Ltda</MudSelectItem>
+            </MudSelect>
+
+            <MudSelect T="string" Label="Status" Variant="Variant.Outlined" Value="@_filtroStatus"
+                       ValueChanged="@(v => _filtroStatus = v)">
+                <MudSelectItem Value="@("")">Todos</MudSelectItem>
+                <MudSelectItem Value="@("Pago")">Pago</MudSelectItem>
+                <MudSelectItem Value="@("Pendente")">Pendente</MudSelectItem>
+                <MudSelectItem Value="@("Vencido")">Vencido</MudSelectItem>
+            </MudSelect>
+
+            <MudRadioGroup T="string" @bind-Value="_formato">
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-1">Formato</MudText>
+                <MudRadio T="string" Value="@("PDF")" Color="Color.Error">PDF</MudRadio>
+                <MudRadio T="string" Value="@("Excel")" Color="Color.Success">Excel</MudRadio>
+            </MudRadioGroup>
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                       StartIcon="@Icons.Material.Filled.FileDownload"
+                       OnClick="GerarRelatorio" Disabled="_gerando">
+                @if (_gerando) { <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" /> }
+                Gerar Relatório
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" FullWidth="true" OnClick="@(() => _drawerOpen = false)">
+                Cancelar
+            </MudButton>
+        </div>
+    }
+    </div>
+</MudDrawer>
+
+@code {
+    private List<Relatorio> _all = new();
+    private List<Relatorio> _filtered = new();
+    private string _catAtiva = "Todos";
+    private string _search = "";
+    private Relatorio? _selectedRel;
+    private bool _drawerOpen;
+    private bool _gerando;
+    private DateRange? _dateRange;
+    private string _filtroContribuinte = "";
+    private string _filtroStatus = "";
+    private string _formato = "PDF";
+
+    private static readonly string[] _categorias = { "Todos", "Cobrancas", "Contribuintes", "Financeiro", "Juridico", "Eventos", "GuiaSindical" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        _all = await RelatorioService.GetAllAsync();
+        ApplyFilter();
+    }
+
+    private void SetCategoria(string cat) { _catAtiva = cat; ApplyFilter(); }
+
+    private void ApplyFilter()
+    {
+        _filtered = _all
+            .Where(r => _catAtiva == "Todos" || r.Categoria.ToString() == _catAtiva)
+            .Where(r => string.IsNullOrEmpty(_search) || r.Nome.Contains(_search, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
+    private void OpenConfig(Relatorio r) { _selectedRel = r; _drawerOpen = true; }
+
+    private async Task GerarRelatorio()
+    {
+        _gerando = true;
+        await Task.Delay(2000);
+        _gerando = false;
+        _drawerOpen = false;
+        Snackbar.Add($"Relatório '{_selectedRel?.Nome}' gerado com sucesso!", Severity.Success);
+    }
+
+    private string GetCatLabel(string cat) => cat switch
+    {
+        "Cobrancas" => "Cobranças",
+        "Contribuintes" => "Contribuintes",
+        "Financeiro" => "Financeiro",
+        "Juridico" => "Jurídico",
+        "Eventos" => "Eventos",
+        "GuiaSindical" => "Guia Sindical",
+        _ => "Todos"
+    };
+
+    private string GetCatIcon(string cat) => cat switch
+    {
+        "Cobrancas" => Icons.Material.Filled.ReceiptLong,
+        "Contribuintes" => Icons.Material.Filled.Business,
+        "Financeiro" => Icons.Material.Filled.TrendingUp,
+        "Juridico" => Icons.Material.Filled.Gavel,
+        "Eventos" => Icons.Material.Filled.Event,
+        "GuiaSindical" => Icons.Material.Filled.Description,
+        _ => Icons.Material.Filled.GridView
+    };
+
+    private string GetCatIconByRel(Relatorio r) => GetCatIcon(r.Categoria.ToString());
+}

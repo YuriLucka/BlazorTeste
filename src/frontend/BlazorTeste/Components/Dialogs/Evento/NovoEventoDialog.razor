@@ -1,0 +1,229 @@
+@* Dialog: create new event — 3-step wizard *@
+
+<MudDialog Style="min-width:640px; max-width:720px;">
+    <TitleContent>
+        <div class="d-flex align-center gap-3">
+            <MudAvatar Color="Color.Primary" Size="Size.Medium">
+                <MudIcon Icon="@Icons.Material.Filled.Event" />
+            </MudAvatar>
+            <div>
+                <MudText Typo="Typo.h6" Style="font-weight:600;">Novo Evento</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Passo @_step de 3</MudText>
+            </div>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <!-- Step indicator -->
+        <div class="d-flex align-center justify-center gap-2 mb-4">
+            @for (int i = 1; i <= 3; i++)
+            {
+                var idx = i;
+                <div class="d-flex align-center gap-2">
+                    <MudAvatar Size="Size.Small"
+                               Color="@(idx <= _step ? Color.Primary : Color.Default)"
+                               Variant="@(idx < _step ? Variant.Filled : (idx == _step ? Variant.Filled : Variant.Outlined))"
+                               Style="width:28px; height:28px; font-size:.75rem;">
+                        @if (idx < _step)
+                        {
+                            <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" />
+                        }
+                        else
+                        {
+                            @idx
+                        }
+                    </MudAvatar>
+                    <MudText Typo="Typo.caption"
+                             Style="@(idx == _step ? "font-weight:600;" : "opacity:.6;")">
+                        @_stepLabels[idx - 1]
+                    </MudText>
+                    @if (idx < 3)
+                    {
+                        <MudDivider Style="width:32px;" />
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Step 1: Dados Básicos -->
+        @if (_step == 1)
+        {
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_nome" Label="Nome do evento *" Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Event"
+                                  FullWidth="true" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_descricao" Label="Descrição" Variant="Variant.Outlined"
+                                  Lines="3" FullWidth="true" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_dataInicio" Label="Data início *" Variant="Variant.Outlined"
+                                   Editable="true" DateFormat="dd/MM/yyyy" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_dataFim" Label="Data fim *" Variant="Variant.Outlined"
+                                   Editable="true" DateFormat="dd/MM/yyyy" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_local" Label="Local / Endereço" Variant="Variant.Outlined"
+                                  Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.LocationOn"
+                                  FullWidth="true" />
+                </MudItem>
+                <MudItem xs="8">
+                    <MudTextField @bind-Value="_cidade" Label="Cidade" Variant="Variant.Outlined" FullWidth="true" />
+                </MudItem>
+                <MudItem xs="4">
+                    <MudSelect @bind-Value="_estado" Label="Estado" Variant="Variant.Outlined">
+                        @foreach (var uf in _ufs)
+                        {
+                            <MudSelectItem Value="@uf">@uf</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+        }
+
+        <!-- Step 2: Inscrições e Valores -->
+        @if (_step == 2)
+        {
+            <MudGrid Spacing="2">
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined" Class="mb-1">
+                        Configure vagas, valores e tipo de inscrição.
+                    </MudAlert>
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField @bind-Value="_maxParticipantes" Label="Máx. participantes" Variant="Variant.Outlined"
+                                     Min="1" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Groups" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudNumericField @bind-Value="_taxaInscricao" Label="Taxa de inscrição (R$)" Variant="Variant.Outlined"
+                                     Min="0m" Format="N2"
+                                     Adornment="Adornment.Start" AdornmentText="R$" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudCheckBox @bind-Value="_inscricaoOnline" Label="Permitir inscrição online" Color="Color.Primary" />
+                </MudItem>
+                @if (_taxaInscricao > 0)
+                {
+                    <MudItem xs="12">
+                        <MudSelect @bind-Value="_formaPagamento" Label="Forma de pagamento" Variant="Variant.Outlined">
+                            <MudSelectItem Value="@("Boleto")">Boleto bancário</MudSelectItem>
+                            <MudSelectItem Value="@("Pix")">PIX</MudSelectItem>
+                            <MudSelectItem Value="@("Boleto ou Pix")">Boleto ou PIX</MudSelectItem>
+                            <MudSelectItem Value="@("Cartão")">Cartão de crédito</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                }
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_observacoes" Label="Observações para inscritos" Variant="Variant.Outlined"
+                                  Lines="3" FullWidth="true" />
+                </MudItem>
+            </MudGrid>
+        }
+
+        <!-- Step 3: Confirmação -->
+        @if (_step == 3)
+        {
+            <MudPaper Outlined="true" Class="rounded-lg pa-4 mb-3">
+                <MudText Typo="Typo.overline" Color="Color.Secondary" Class="mb-2">RESUMO DO EVENTO</MudText>
+                <MudGrid Spacing="1">
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.h6" Style="font-weight:600;">@_nome</MudText>
+                        @if (!string.IsNullOrEmpty(_descricao))
+                        {
+                            <MudText Typo="Typo.body2" Color="Color.Secondary">@_descricao</MudText>
+                        }
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">DATA</MudText>
+                        <MudText Typo="Typo.body2">
+                            @(_dataInicio?.ToString("dd/MM/yyyy") ?? "-") até @(_dataFim?.ToString("dd/MM/yyyy") ?? "-")
+                        </MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">LOCAL</MudText>
+                        <MudText Typo="Typo.body2">@(_local.Length > 0 ? _local : "-"), @_cidade/@_estado</MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">VAGAS</MudText>
+                        <MudText Typo="Typo.body2">@_maxParticipantes participantes</MudText>
+                    </MudItem>
+                    <MudItem xs="6">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">TAXA</MudText>
+                        <MudText Typo="Typo.body2" Style="font-weight:600;">
+                            @(_taxaInscricao > 0 ? _taxaInscricao.ToString("C2") : "Gratuito")
+                        </MudText>
+                    </MudItem>
+                    @if (_taxaInscricao > 0)
+                    {
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">PAGAMENTO</MudText>
+                            <MudText Typo="Typo.body2">@_formaPagamento</MudText>
+                        </MudItem>
+                    }
+                </MudGrid>
+            </MudPaper>
+            <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined">
+                Evento será criado com status <b>Aberto</b> e inscrições @(_inscricaoOnline ? "habilitadas" : "desabilitadas") para o portal.
+            </MudAlert>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="MudDialog.Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudSpacer />
+        @if (_step > 1)
+        {
+            <MudButton OnClick="Anterior" Variant="Variant.Outlined"
+                       StartIcon="@Icons.Material.Filled.ArrowBack">Anterior</MudButton>
+        }
+        @if (_step < 3)
+        {
+            <MudButton OnClick="Proximo" Variant="Variant.Filled" Color="Color.Primary"
+                       EndIcon="@Icons.Material.Filled.ArrowForward"
+                       Disabled="@(!CanAdvance())">Próximo</MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="Salvar" Variant="Variant.Filled" Color="Color.Primary"
+                       StartIcon="@Icons.Material.Filled.Check">Criar Evento</MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+
+    private int _step = 1;
+    private readonly string[] _stepLabels = { "Dados Básicos", "Inscrições", "Confirmação" };
+
+    private string _nome = "";
+    private string _descricao = "";
+    private DateTime? _dataInicio = DateTime.Today.AddDays(30);
+    private DateTime? _dataFim = DateTime.Today.AddDays(31);
+    private string _local = "";
+    private string _cidade = "";
+    private string _estado = "SP";
+    private int _maxParticipantes = 100;
+    private decimal _taxaInscricao = 0m;
+    private bool _inscricaoOnline = true;
+    private string _formaPagamento = "Boleto ou Pix";
+    private string _observacoes = "";
+
+    private readonly string[] _ufs = {
+        "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS",
+        "MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC",
+        "SP","SE","TO"
+    };
+
+    private bool CanAdvance() => _step switch
+    {
+        1 => !string.IsNullOrWhiteSpace(_nome) && _dataInicio.HasValue && _dataFim.HasValue,
+        _ => true
+    };
+
+    private void Proximo() { if (CanAdvance()) _step++; }
+    private void Anterior() { if (_step > 1) _step--; }
+    private void Salvar() => MudDialog.Close(DialogResult.Ok(true));
+}

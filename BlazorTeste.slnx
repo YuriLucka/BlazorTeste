@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="src/backend/BlazorTeste.Domain/BlazorTeste.Domain.csproj" />
+    <Project Path="src/backend/BlazorTeste.Application/BlazorTeste.Application.csproj" />
+    <Project Path="src/backend/BlazorTeste.Infrastructure/BlazorTeste.Infrastructure.csproj" />
+    <Project Path="src/backend/BlazorTeste.Api/BlazorTeste.Api.csproj" />
+  </Folder>
+  <Folder Name="/frontend/">
+    <Project Path="src/frontend/BlazorTeste/BlazorTeste.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/BlazorTeste.Domain.Tests/BlazorTeste.Domain.Tests.csproj" />
+    <Project Path="tests/BlazorTeste.Application.Tests/BlazorTeste.Application.Tests.csproj" />
+  </Folder>
+</Solution>

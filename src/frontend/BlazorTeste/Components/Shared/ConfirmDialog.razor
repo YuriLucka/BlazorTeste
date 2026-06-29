@@ -1,0 +1,39 @@
+@* Generic confirmation dialog *@
+
+<MudDialog>
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@(Danger ? Icons.Material.Filled.Warning : Icons.Material.Filled.HelpOutline)"
+                     Color="@(Danger ? Color.Error : Color.Warning)" />
+            <MudText Typo="Typo.h6">@Title</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudText Typo="Typo.body1">@Message</MudText>
+        @if (!string.IsNullOrEmpty(Detail))
+        {
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-2">@Detail</MudText>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton OnClick="Confirm"
+                   Variant="Variant.Filled"
+                   Color="@(Danger ? Color.Error : Color.Primary)">
+            @ConfirmLabel
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+
+    [Parameter] public string Title { get; set; } = "Confirmar ação";
+    [Parameter] public string Message { get; set; } = "Deseja confirmar esta ação?";
+    [Parameter] public string Detail { get; set; } = "";
+    [Parameter] public string ConfirmLabel { get; set; } = "Confirmar";
+    [Parameter] public bool Danger { get; set; } = false;
+
+    private void Confirm() => MudDialog.Close(DialogResult.Ok(true));
+    private void Cancel() => MudDialog.Cancel();
+}

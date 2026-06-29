@@ -1,0 +1,300 @@
+@inject ContribuinteService ContribuinteService
+@inject CobrancaService CobrancaService
+@inject AppStateService AppState
+
+<MudDialog Style="min-width:700px; max-width:800px;">
+    <TitleContent>
+        <div class="d-flex align-center gap-2">
+            <MudIcon Icon="@Icons.Material.Filled.Handshake" Color="Color.Primary" />
+            <MudText Typo="Typo.h6">Nova Negociação</MudText>
+        </div>
+    </TitleContent>
+    <DialogContent>
+
+        <!-- Step progress -->
+        <div class="d-flex align-center justify-center mb-4">
+            @for (int i = 0; i < _labels.Length; i++)
+            {
+                var si = i;
+                <div class="d-flex align-center">
+                    <div class="d-flex flex-column align-center" style="min-width:90px;">
+                        <MudAvatar Size="Size.Small"
+                                   Color="@(_step > si ? Color.Success : _step == si ? Color.Primary : Color.Default)"
+                                   Variant="@(_step == si ? Variant.Filled : Variant.Outlined)"
+                                   Style="width:34px;height:34px;font-size:.9rem;">
+                            @if (_step > si) { <MudIcon Icon="@Icons.Material.Filled.Check" Size="Size.Small" /> }
+                            else { @(si + 1) }
+                        </MudAvatar>
+                        <MudText Typo="Typo.caption" Color="@(_step == si ? Color.Primary : Color.Secondary)" Class="text-center">
+                            @_labels[si]
+                        </MudText>
+                    </div>
+                    @if (si < _labels.Length - 1)
+                    {
+                        <MudDivider Style="width:50px; margin-bottom:18px;" />
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- PASSO 1: Selecionar Contribuinte e ver dívidas -->
+        @if (_step == 0)
+        {
+            <MudGrid Spacing="3">
+                <MudItem xs="12">
+                    <MudAutocomplete T="Contribuinte" Label="Contribuinte *"
+                                     Value="_contribuinteSelecionado"
+                                     ValueChanged="OnContribuinteChanged"
+                                     Variant="Variant.Outlined"
+                                     SearchFunc="BuscarContribuinte"
+                                     ToStringFunc="c => c?.RazaoSocial ?? string.Empty"
+                                     AdornmentIcon="@Icons.Material.Filled.Search"
+                                     NoItemsFoundText="Nenhum encontrado"
+                                     ResetValueOnEmptyText="true"
+                                     Placeholder="Digite o nome ou CNPJ..." />
+                </MudItem>
+
+                @if (_contribuinteSelecionado is not null)
+                {
+                    <MudItem xs="12">
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">Débitos em Aberto</MudText>
+
+                        @if (_loadingDebitos)
+                        {
+                            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                        }
+                        else
+                        {
+                            <MudTable T="Cobranca" Items="_debitos" Dense="true" Hover="true" Elevation="0"
+                                      MultiSelection="true" @bind-SelectedItems="_debitosSelecionados">
+                                <HeaderContent>
+                                    <MudTh>Tipo</MudTh>
+                                    <MudTh>Ano</MudTh>
+                                    <MudTh>Vencimento</MudTh>
+                                    <MudTh>Valor Original</MudTh>
+                                    <MudTh>Multa + Juros</MudTh>
+                                    <MudTh>Total</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>@context.Tipo</MudTd>
+                                    <MudTd>@context.AnoReferencia</MudTd>
+                                    <MudTd Style="color:var(--mud-palette-error);">@context.Vencimento.ToString("dd/MM/yyyy")</MudTd>
+                                    <MudTd>@context.Valor.ToString("C2")</MudTd>
+                                    <MudTd Style="color:var(--mud-palette-error);">@((context.Multa + context.Juros).ToString("C2"))</MudTd>
+                                    <MudTd><strong>@((context.Valor + context.Multa + context.Juros).ToString("C2"))</strong></MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+
+                        @if (_debitosSelecionados.Any())
+                        {
+                            <MudPaper Outlined="true" Class="pa-3 mt-2 rounded-xl">
+                                <div class="d-flex justify-space-between">
+                                    <MudText Typo="Typo.body2">@_debitosSelecionados.Count cobranças selecionadas</MudText>
+                                    <MudText Typo="Typo.body2" Style="font-weight:700;">
+                                        Total: @_debitosSelecionados.Sum(d => d.Valor + d.Multa + d.Juros).ToString("C2")
+                                    </MudText>
+                                </div>
+                            </MudPaper>
+                        }
+                    </MudItem>
+                }
+            </MudGrid>
+        }
+
+        <!-- PASSO 2: Condições da negociação -->
+        @if (_step == 1)
+        {
+            var debitoTotal = _debitosSelecionados.Sum(d => d.Valor + d.Multa + d.Juros);
+            var desconto = debitoTotal * (_percentualDesconto / 100m);
+            var valorNeg = debitoTotal - desconto;
+
+            <MudGrid Spacing="3">
+                <MudItem xs="12">
+                    <MudPaper Outlined="true" Class="pa-3 rounded-xl mb-1">
+                        <div class="d-flex justify-space-between">
+                            <span><MudText Typo="Typo.caption" Color="Color.Secondary">Débito Total Selecionado</MudText></span>
+                            <MudText Typo="Typo.subtitle2" Style="font-weight:700;">@debitoTotal.ToString("C2")</MudText>
+                        </div>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudNumericField @bind-Value="_percentualDesconto" Label="Desconto (%)" Variant="Variant.Outlined"
+                                     Min="0" Max="50" Format="N2"
+                                     HelperText="Máximo permitido: 50%" />
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudPaper Outlined="true" Class="pa-3 rounded-xl" Style="height:100%; display:flex; flex-direction:column; justify-content:center;">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Valor com Desconto</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700; color:var(--mud-palette-success);">
+                            @valorNeg.ToString("C2")
+                        </MudText>
+                        @if (desconto > 0)
+                        {
+                            <MudText Typo="Typo.caption" Style="color:var(--mud-palette-success);">
+                                Economia: @desconto.ToString("C2")
+                            </MudText>
+                        }
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="_numeroParcelas" Label="Nº de Parcelas *" Variant="Variant.Outlined"
+                                     Min="1" Max="24"
+                                     HelperText="@($"Parcela: {(valorNeg / _numeroParcelas).ToString("C2")}")" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="_diaVencimento" Label="Dia de Vencimento" Variant="Variant.Outlined"
+                                     Min="1" Max="28" />
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudDatePicker @bind-Date="_primeiraParcela" Label="1ª Parcela" Variant="Variant.Outlined"
+                                   DateFormat="dd/MM/yyyy" MinDate="DateTime.Today" />
+                </MudItem>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_observacoes" Label="Observações" Variant="Variant.Outlined"
+                                  Lines="2" MaxLength="500" />
+                </MudItem>
+            </MudGrid>
+        }
+
+        <!-- PASSO 3: Plano de Parcelas e Confirmação -->
+        @if (_step == 2)
+        {
+            var debitoTotal = _debitosSelecionados.Sum(d => d.Valor + d.Multa + d.Juros);
+            var desconto = debitoTotal * (_percentualDesconto / 100m);
+            var valorNeg = debitoTotal - desconto;
+            var valorParcela = Math.Round(valorNeg / _numeroParcelas, 2);
+
+            <MudGrid Spacing="3">
+                <MudItem xs="12" sm="4">
+                    <MudPaper Outlined="true" Class="pa-3 rounded-xl text-center">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuinte</MudText>
+                        <MudText Typo="Typo.body2" Style="font-weight:600;">@_contribuinteSelecionado?.RazaoSocial</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudPaper Outlined="true" Class="pa-3 rounded-xl text-center">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Valor Negociado</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700;">@valorNeg.ToString("C2")</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12" sm="4">
+                    <MudPaper Outlined="true" Class="pa-3 rounded-xl text-center">
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Parcelas</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700;">@_numeroParcelas x @valorParcela.ToString("C2")</MudText>
+                    </MudPaper>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudText Typo="Typo.subtitle2" Class="mb-2">Plano de Pagamento</MudText>
+                    <MudTable T="int" Items="@Enumerable.Range(1, _numeroParcelas).ToList()" Dense="true" Elevation="0">
+                        <HeaderContent>
+                            <MudTh>Parcela</MudTh>
+                            <MudTh>Vencimento</MudTh>
+                            <MudTh>Valor</MudTh>
+                            <MudTh>Status</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context</MudTd>
+                            <MudTd>
+                                @((_primeiraParcela ?? DateTime.Today).AddMonths(context - 1).ToString("dd/MM/yyyy"))
+                            </MudTd>
+                            <MudTd><strong>@valorParcela.ToString("C2")</strong></MudTd>
+                            <MudTd>
+                                <MudChip T="string" Size="Size.Small" Color="Color.Info" Variant="Variant.Outlined">Pendente</MudChip>
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudAlert Severity="Severity.Success" Dense="true" Icon="@Icons.Material.Filled.CheckCircle">
+                        Negociação pronta para ser registrada. Clique em <strong>Confirmar</strong>.
+                    </MudAlert>
+                </MudItem>
+            </MudGrid>
+        }
+
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@(() => MudDialog.Cancel())">Cancelar</MudButton>
+        <MudSpacer />
+        @if (_step > 0)
+        {
+            <MudButton OnClick="@(() => _step--)" StartIcon="@Icons.Material.Filled.ArrowBack" Variant="Variant.Outlined">
+                Anterior
+            </MudButton>
+        }
+        @if (_step < 2)
+        {
+            <MudButton OnClick="Avancar" EndIcon="@Icons.Material.Filled.ArrowForward"
+                       Variant="Variant.Filled" Color="Color.Primary"
+                       Disabled="@(_step == 0 && !_debitosSelecionados.Any())">
+                Próximo
+            </MudButton>
+        }
+        else
+        {
+            <MudButton OnClick="Confirmar" StartIcon="@Icons.Material.Filled.Handshake"
+                       Variant="Variant.Filled" Color="Color.Primary">
+                Confirmar Negociação
+            </MudButton>
+        }
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+
+    private int _step = 0;
+    private static readonly string[] _labels = { "Contribuinte", "Condições", "Confirmação" };
+
+    private Contribuinte? _contribuinteSelecionado;
+    private List<Contribuinte> _contribuintes = new();
+    private List<Cobranca> _debitos = new();
+    private HashSet<Cobranca> _debitosSelecionados = new();
+    private bool _loadingDebitos;
+
+    private decimal _percentualDesconto = 10m;
+    private int _numeroParcelas = 6;
+    private int _diaVencimento = 10;
+    private DateTime? _primeiraParcela = DateTime.Today.AddMonths(1);
+    private string _observacoes = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _contribuintes = AppState.EntidadeAtiva is { } e
+            ? await ContribuinteService.GetByEntidadeAsync(e.Id)
+            : await ContribuinteService.GetAllAsync();
+    }
+
+    private Task<IEnumerable<Contribuinte>> BuscarContribuinte(string v) =>
+        Task.FromResult(_contribuintes
+            .Where(c => string.IsNullOrEmpty(v) ||
+                        c.RazaoSocial.Contains(v, StringComparison.OrdinalIgnoreCase) ||
+                        c.Cnpj.Contains(v, StringComparison.OrdinalIgnoreCase))
+            .AsEnumerable());
+
+    private async Task OnContribuinteChanged(Contribuinte? val)
+    {
+        _contribuinteSelecionado = val;
+        _debitosSelecionados.Clear();
+        _debitos = new();
+        if (val is null) return;
+        _loadingDebitos = true;
+        StateHasChanged();
+        var cobrancas = await CobrancaService.GetByContribuinteAsync(val.Id);
+        _debitos = cobrancas
+            .Where(c => c.Status == StatusCobranca.Vencido || c.Status == StatusCobranca.Pendente)
+            .ToList();
+        _loadingDebitos = false;
+    }
+
+    private void Avancar()
+    {
+        if (_step == 0 && !_debitosSelecionados.Any()) return;
+        _step++;
+    }
+
+    private void Confirmar() => MudDialog.Close(DialogResult.Ok(true));
+}

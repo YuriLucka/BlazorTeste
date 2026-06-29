@@ -1,0 +1,137 @@
+@page "/juridico"
+@inject JuridicoService JuridicoService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Jurídico — SindERP</PageTitle>
+
+<div class="d-flex align-center justify-space-between mb-4">
+    <MudText Typo="Typo.h5" Style="font-weight:600;">Jurídico</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenNovoProcesso">
+        Novo Processo
+    </MudButton>
+</div>
+
+<MudCard Elevation="2" Class="rounded-xl">
+    <MudCardContent Class="pt-0">
+        <MudTabs Elevation="0" PanelClass="pt-3">
+            <MudTabPanel Text="Processos">
+                <MudTable Items="_processos" Dense="true" Hover="true" Elevation="0" Striped="false">
+                    <HeaderContent>
+                        <MudTh>Número</MudTh>
+                        <MudTh>Tipo</MudTh>
+                        <MudTh>Tribunal</MudTh>
+                        <MudTh>Advogado</MudTh>
+                        <MudTh>Situação</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd><MudText Typo="Typo.body2" Style="font-family:monospace; white-space:nowrap; font-size:0.75rem;">@context.Numero</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.Tipo</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.Tribunal</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.NomeAdvogado</MudText></MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@GetSituacaoColor(context.Situacao)">
+                                @context.Situacao
+                            </MudChip>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Advogados">
+                <MudTable Items="_advogados" Dense="true" Hover="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Nome</MudTh>
+                        <MudTh>OAB</MudTh>
+                        <MudTh>E-mail</MudTh>
+                        <MudTh>Telefone</MudTh>
+                        <MudTh>Processos ativos</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <div class="d-flex align-center gap-2">
+                                <MudAvatar Size="Size.Small" Color="Color.Primary">
+                                    @context.Nome[0]
+                                </MudAvatar>
+                                @context.Nome
+                            </div>
+                        </MudTd>
+                        <MudTd>@context.Oab</MudTd>
+                        <MudTd>@context.Email</MudTd>
+                        <MudTd>@context.Telefone</MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small" Color="Color.Primary">@context.ProcessosAtivos</MudChip>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudTabPanel>
+
+            <MudTabPanel Text="Audiências">
+                <MudTable Items="_audiencias" Dense="true" Hover="true" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Data/Hora</MudTh>
+                        <MudTh>Processo</MudTh>
+                        <MudTh>Tipo</MudTh>
+                        <MudTh>Advogado</MudTh>
+                        <MudTh>Local</MudTh>
+                        <MudTh>Situação</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.DataHora.ToString("dd/MM/yyyy HH:mm")</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="font-family:monospace;font-size:0.75rem;white-space:nowrap;">@context.NumeroProcesso</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.Tipo</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.NomeAdvogado</MudText></MudTd>
+                        <MudTd><MudText Typo="Typo.body2" Style="white-space:nowrap;">@context.Local</MudText></MudTd>
+                        <MudTd>
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@GetAudSituacaoColor(context.Situacao)">
+                                @context.Situacao
+                            </MudChip>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudTabPanel>
+        </MudTabs>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private List<Processo> _processos = new();
+    private List<Advogado> _advogados = new();
+    private List<Audiencia> _audiencias = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _processos = await JuridicoService.GetProcessosAsync();
+        _advogados = await JuridicoService.GetAdvogadosAsync();
+        _audiencias = (await JuridicoService.GetAudienciasAsync()).OrderBy(a => a.DataHora).ToList();
+    }
+
+    private Color GetSituacaoColor(string situacao) => situacao switch
+    {
+        "Em andamento" => Color.Info,
+        "Suspenso" => Color.Warning,
+        "Encerrado" => Color.Default,
+        _ => Color.Default
+    };
+
+    private Color GetAudSituacaoColor(string situacao) => situacao switch
+    {
+        "Agendada" => Color.Primary,
+        "Realizada" => Color.Success,
+        "Cancelada" => Color.Error,
+        _ => Color.Default
+    };
+
+    private async Task OpenNovoProcesso()
+    {
+        var options = new DialogOptions { CloseOnEscapeKey = true, CloseButton = true, MaxWidth = MaxWidth.Medium };
+        var dialog = await DialogService.ShowAsync<BlazorTeste.Components.Dialogs.Juridico.NovoProcessoDialog>("Novo Processo", options);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+            Snackbar.Add("Processo cadastrado com sucesso!", Severity.Success);
+    }
+}

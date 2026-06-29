@@ -1,0 +1,112 @@
+using System.Text.Json;
+using BlazorTeste.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+
+namespace BlazorTeste.Infrastructure.Data;
+
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+{
+    public DbSet<Entidade> Entidades => Set<Entidade>();
+    public DbSet<Contribuinte> Contribuintes => Set<Contribuinte>();
+    public DbSet<Cobranca> Cobrancas => Set<Cobranca>();
+    public DbSet<LancamentoFinanceiro> LancamentosFinanceiros => Set<LancamentoFinanceiro>();
+    public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
+    public DbSet<Processo> Processos => Set<Processo>();
+    public DbSet<Advogado> Advogados => Set<Advogado>();
+    public DbSet<Audiencia> Audiencias => Set<Audiencia>();
+    public DbSet<Campanha> Campanhas => Set<Campanha>();
+    public DbSet<GuiaSindical> GuiaSindicais => Set<GuiaSindical>();
+    public DbSet<RegistroBaixa> RegistrosBaixa => Set<RegistroBaixa>();
+    public DbSet<Relatorio> Relatorios => Set<Relatorio>();
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<Negociacao> Negociacoes => Set<Negociacao>();
+    public DbSet<Evento> Eventos => Set<Evento>();
+    public DbSet<ConfiguracaoEntidade> Configuracoes => Set<ConfiguracaoEntidade>();
+
+    private static readonly JsonSerializerOptions _json = new();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Entidade>(b =>
+        {
+            b.Property(e => e.Cnaes)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, _json),
+                    v => JsonSerializer.Deserialize<List<string>>(v, _json) ?? new());
+            b.Property(e => e.Cidades)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, _json),
+                    v => JsonSerializer.Deserialize<List<string>>(v, _json) ?? new());
+        });
+
+        modelBuilder.Entity<Contribuinte>(b =>
+        {
+            b.OwnsMany(c => c.Enderecos, owned =>
+            {
+                owned.ToTable("Enderecos");
+                owned.WithOwner().HasForeignKey("ContribuinteId");
+            });
+            b.OwnsMany(c => c.Contatos, owned =>
+            {
+                owned.ToTable("Contatos");
+                owned.WithOwner().HasForeignKey("ContribuinteId");
+            });
+            b.OwnsMany(c => c.Socios, owned =>
+            {
+                owned.ToTable("Socios");
+                owned.WithOwner().HasForeignKey("ContribuinteId");
+                owned.Ignore(s => s.ContribuinteId);
+            });
+            b.OwnsMany(c => c.Historico, owned =>
+            {
+                owned.ToTable("HistoricoMensais");
+                owned.WithOwner().HasForeignKey("ContribuinteId");
+            });
+        });
+
+        modelBuilder.Entity<Usuario>(b =>
+        {
+            b.Property(u => u.Permissoes)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, _json),
+                    v => JsonSerializer.Deserialize<List<PermissaoEntidade>>(v, _json) ?? new());
+        });
+
+        modelBuilder.Entity<Negociacao>(b =>
+        {
+            b.OwnsMany(n => n.Parcelas, owned =>
+            {
+                owned.ToTable("NegociacaoParcelas");
+                owned.WithOwner().HasForeignKey("NegociacaoId");
+            });
+            b.OwnsMany(n => n.CobrancasOriginais, owned =>
+            {
+                owned.ToTable("NegociacaoCobrancasOriginais");
+                owned.WithOwner().HasForeignKey("NegociacaoId");
+            });
+        });
+
+        modelBuilder.Entity<Evento>(b =>
+        {
+            b.OwnsMany(e => e.Inscricoes, owned =>
+            {
+                owned.ToTable("EventoInscricoes");
+                owned.WithOwner().HasForeignKey("EventoId");
+            });
+        });
+
+        modelBuilder.Entity<ConfiguracaoEntidade>(b =>
+        {
+            b.HasKey(c => c.EntidadeId);
+            b.Property(c => c.EntidadeId).ValueGeneratedNever();
+            b.OwnsOne(c => c.Geral, o => o.ToJson());
+            b.OwnsOne(c => c.Cobranca, o =>
+            {
+                o.ToJson();
+                o.OwnsMany(cc => cc.Faixas);
+            });
+            b.OwnsOne(c => c.Email, o => o.ToJson());
+            b.OwnsOne(c => c.Banco, o => o.ToJson());
+        });
+    }
+}

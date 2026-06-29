@@ -1,0 +1,147 @@
+@inject JuridicoService JuridicoService
+
+<MudDialog Style="min-width:600px; max-width:680px;">
+    <TitleContent>
+        <div class="d-flex align-center gap-3">
+            <MudAvatar Color="Color.Secondary" Size="Size.Medium">
+                <MudIcon Icon="@Icons.Material.Filled.Gavel" />
+            </MudAvatar>
+            <div>
+                <MudText Typo="Typo.h6" Style="font-weight:600;">Novo Processo</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Cadastro de processo judicial/administrativo</MudText>
+            </div>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <MudGrid Spacing="2">
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_numero" Label="Número do processo *" Variant="Variant.Outlined"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Tag"
+                              FullWidth="true"
+                              Placeholder="0000000-00.0000.0.00.0000" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudDatePicker @bind-Date="_dataAbertura" Label="Data de abertura *"
+                               Variant="Variant.Outlined" Editable="true" DateFormat="dd/MM/yyyy" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudSelect @bind-Value="_tipo" Label="Tipo *" Variant="Variant.Outlined">
+                    <MudSelectItem Value="@("Trabalhista")">Trabalhista</MudSelectItem>
+                    <MudSelectItem Value="@("Cível")">Cível</MudSelectItem>
+                    <MudSelectItem Value="@("Administrativo")">Administrativo</MudSelectItem>
+                    <MudSelectItem Value="@("Tributário")">Tributário</MudSelectItem>
+                    <MudSelectItem Value="@("Sindical")">Sindical</MudSelectItem>
+                    <MudSelectItem Value="@("Previdenciário")">Previdenciário</MudSelectItem>
+                    <MudSelectItem Value="@("Outro")">Outro</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="6">
+                <MudSelect @bind-Value="_situacao" Label="Situação" Variant="Variant.Outlined">
+                    <MudSelectItem Value="@("Em andamento")">Em andamento</MudSelectItem>
+                    <MudSelectItem Value="@("Aguardando")">Aguardando</MudSelectItem>
+                    <MudSelectItem Value="@("Encerrado")">Encerrado</MudSelectItem>
+                    <MudSelectItem Value="@("Suspenso")">Suspenso</MudSelectItem>
+                    <MudSelectItem Value="@("Arquivado")">Arquivado</MudSelectItem>
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_vara" Label="Vara" Variant="Variant.Outlined" FullWidth="true" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_tribunal" Label="Tribunal / Fórum" Variant="Variant.Outlined" FullWidth="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudAutocomplete T="string" @bind-Value="_advogado"
+                                 Label="Advogado responsável" Variant="Variant.Outlined"
+                                 Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Person"
+                                 SearchFunc="BuscarAdvogado"
+                                 ToStringFunc="s => s"
+                                 FullWidth="true"
+                                 ResetValueOnEmptyText="true"
+                                 CoerceValue="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudDivider Class="my-1" />
+                <MudText Typo="Typo.overline" Color="Color.Secondary">PARTES ENVOLVIDAS</MudText>
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_requerente" Label="Requerente / Reclamante"
+                              Variant="Variant.Outlined" FullWidth="true" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_requerido" Label="Requerido / Reclamado"
+                              Variant="Variant.Outlined" FullWidth="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_descricao" Label="Descrição / Objeto" Variant="Variant.Outlined"
+                              Lines="3" FullWidth="true" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudNumericField @bind-Value="_valorCausa" Label="Valor da causa (R$)"
+                                 Variant="Variant.Outlined" Min="0m" Format="N2"
+                                 Adornment="Adornment.Start" AdornmentText="R$" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudDivider Class="my-1" />
+                <MudText Typo="Typo.overline" Color="Color.Secondary">PRÓXIMA AUDIÊNCIA (OPCIONAL)</MudText>
+            </MudItem>
+            <MudItem xs="6">
+                <MudDatePicker @bind-Date="_dataAudiencia" Label="Data" Variant="Variant.Outlined"
+                               Editable="true" DateFormat="dd/MM/yyyy" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudTextField @bind-Value="_tipoAudiencia" Label="Tipo de audiência" Variant="Variant.Outlined" FullWidth="true" />
+            </MudItem>
+        </MudGrid>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="MudDialog.Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton OnClick="Salvar" Variant="Variant.Filled" Color="Color.Secondary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   Disabled="@(string.IsNullOrWhiteSpace(_numero) || string.IsNullOrWhiteSpace(_tipo))">
+            Cadastrar Processo
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+
+    private string _numero = "";
+    private DateTime? _dataAbertura = DateTime.Today;
+    private string _tipo = "Trabalhista";
+    private string _situacao = "Em andamento";
+    private string _vara = "";
+    private string _tribunal = "";
+    private string _advogado = "";
+    private string _requerente = "";
+    private string _requerido = "";
+    private string _descricao = "";
+    private decimal _valorCausa = 0m;
+    private DateTime? _dataAudiencia;
+    private string _tipoAudiencia = "";
+
+    private List<Advogado> _advogados = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _advogados = await JuridicoService.GetAdvogadosAsync();
+    }
+
+    private Task<IEnumerable<string>> BuscarAdvogado(string value)
+    {
+        var nomes = _advogados.Select(a => a.Nome);
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(nomes);
+        return Task.FromResult(
+            nomes.Where(n => n.Contains(value, StringComparison.OrdinalIgnoreCase))
+        );
+    }
+
+    private void Salvar() => MudDialog.Close(DialogResult.Ok(true));
+}

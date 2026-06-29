@@ -1,0 +1,264 @@
+@page "/"
+@inject ContribuinteService ContribuinteService
+@inject CobrancaService CobrancaService
+@inject JuridicoService JuridicoService
+@inject GuiaSindicalService GuiaSindicalService
+@inject AppStateService AppState
+
+<PageTitle>Dashboard — SindERP</PageTitle>
+
+<MudText Typo="Typo.h5" Class="mb-1" Style="font-weight:600;">Dashboard</MudText>
+<MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+    @(AppState.EntidadeAtiva?.Nome ?? "Visão geral do sistema")
+</MudText>
+
+<MudAlert Severity="Severity.Info" Icon="@Icons.Material.Filled.GppGood" Class="mb-4"
+          ContentAlignment="HorizontalAlignment.Left">
+    <div class="d-flex align-center justify-space-between flex-wrap gap-2" style="width:100%;">
+        <div>
+            <strong>Guia Sindical @DateTime.Today.Year</strong> — @_guiasEmitidas emitidas &nbsp;|&nbsp;
+            @_guiasArrecadado.ToString("C0") arrecadado &nbsp;|&nbsp; @_guiasInadimplencia.ToString("N0")% inadimplência
+        </div>
+        <MudButton Variant="Variant.Outlined" Size="Size.Small" Href="/guia-sindical"
+                   Color="Color.Info">
+            Ver Detalhes
+        </MudButton>
+    </div>
+</MudAlert>
+
+<MudGrid Spacing="3">
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center gap-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Business"
+                             Style="font-size:2.5rem;" Color="Color.Primary" />
+                    <div style="min-width:0;">
+                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1; white-space:nowrap;">
+                            @_totalContribuintes.ToString("N0")
+                        </MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Contribuintes</MudText>
+                    </div>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center gap-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Warning"
+                             Style="font-size:2.5rem;" Color="Color.Warning" />
+                    <div style="min-width:0;">
+                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1; white-space:nowrap;">
+                            @_cobrancasEmAberto.ToString("N0")
+                        </MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Cobranças em aberto</MudText>
+                    </div>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center gap-3">
+                    <MudIcon Icon="@Icons.Material.Filled.AttachMoney"
+                             Style="font-size:2.5rem;" Color="Color.Success" />
+                    <div style="min-width:0;">
+                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1; white-space:nowrap;">
+                            @_arrecadadoMes.ToString("C0")
+                        </MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Arrecadado no mês</MudText>
+                    </div>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center gap-3">
+                    <MudIcon Icon="@Icons.Material.Filled.Gavel"
+                             Style="font-size:2.5rem;" Color="Color.Error" />
+                    <div style="min-width:0;">
+                        <MudText Typo="Typo.h4" Style="font-weight:700; line-height:1.1; white-space:nowrap;">
+                            @_processosAtivos
+                        </MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Processos ativos</MudText>
+                    </div>
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" md="8">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Style="font-weight:600;">Arrecadação — Últimos 6 Meses</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                <MudChart ChartType="ChartType.Bar"
+                          ChartSeries="@_chartSeries"
+                          XAxisLabels="@_chartLabels"
+                          Width="100%"
+                          Height="280px"
+                          ChartOptions="@_chartOptions" />
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12" md="4">
+        <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Style="font-weight:600;">Próximas Audiências</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent Class="pt-0">
+                @foreach (var aud in _proximasAudiencias)
+                {
+                    <div class="d-flex flex-column mb-3">
+                        <MudText Typo="Typo.body2" Style="font-weight:500;">@aud.NumeroProcesso</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@aud.NomeAdvogado</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Primary">@aud.DataHora.ToString("dd/MM/yyyy HH:mm") — @aud.Tipo</MudText>
+                    </div>
+                    <MudDivider Class="mb-3" />
+                }
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+
+    <MudItem xs="12">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6" Style="font-weight:600;">Últimas Cobranças</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent Class="pt-0">
+                <MudTable Items="_ultimasCobrancas" Dense="true" Hover="true" Striped="false" Elevation="0">
+                    <HeaderContent>
+                        <MudTh>Contribuinte</MudTh>
+                        <MudTh>Tipo</MudTh>
+                        <MudTh>Valor</MudTh>
+                        <MudTh>Vencimento</MudTh>
+                        <MudTh>Status</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Contribuinte">
+                            <MudText Typo="Typo.body2">@context.RazaoSocialContribuinte</MudText>
+                        </MudTd>
+                        <MudTd DataLabel="Tipo">@context.Tipo</MudTd>
+                        <MudTd DataLabel="Valor">@context.Valor.ToString("C2")</MudTd>
+                        <MudTd DataLabel="Vencimento">@context.Vencimento.ToString("dd/MM/yyyy")</MudTd>
+                        <MudTd DataLabel="Status">
+                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Filled">
+                                @context.Status
+                            </MudChip>
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+<MudText Typo="Typo.overline" Color="Color.Secondary" Class="mt-4 mb-2 d-block">Ações Rápidas</MudText>
+<div class="d-flex gap-2 flex-wrap">
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Description"
+               Href="/guia-sindical">
+        Emitir Guia Sindical
+    </MudButton>
+    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Handshake"
+               Href="/negociacao">
+        Nova Negociação
+    </MudButton>
+    <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.PriceCheck"
+               Href="/baixa">
+        Baixa Manual
+    </MudButton>
+    <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.BarChart"
+               Href="/relatorios">
+        Ver Relatórios
+    </MudButton>
+</div>
+
+@code {
+    private int _totalContribuintes;
+    private int _cobrancasEmAberto;
+    private decimal _arrecadadoMes;
+    private int _processosAtivos;
+    private int _guiasEmitidas;
+    private decimal _guiasArrecadado;
+    private decimal _guiasInadimplencia;
+    private List<Cobranca> _ultimasCobrancas = new();
+    private List<Audiencia> _proximasAudiencias = new();
+    private List<ChartSeries> _chartSeries = new();
+    private string[] _chartLabels = Array.Empty<string>();
+    private readonly ChartOptions _chartOptions = new ChartOptions
+    {
+        YAxisFormat = "C0",
+        MaxNumYAxisTicks = 6
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var contribuintes = await ContribuinteService.GetAllAsync();
+        var cobrancas = await CobrancaService.GetAllAsync();
+        var audiencias = await JuridicoService.GetAudienciasAsync();
+        var guias = await GuiaSindicalService.GetAllAsync();
+
+        var anoAtual = DateTime.Today.Year;
+        var guiasAno = guias.Where(g => g.AnoReferencia == anoAtual).ToList();
+        _guiasEmitidas = guiasAno.Count;
+        _guiasArrecadado = guiasAno.Where(g => g.Status == StatusGuia.Paga).Sum(g => g.ValorBase);
+        var naoPagas = guiasAno.Count(g => g.Status is StatusGuia.Pendente or StatusGuia.Vencida);
+        _guiasInadimplencia = guiasAno.Count > 0 ? (decimal)naoPagas / guiasAno.Count * 100 : 0;
+
+        _totalContribuintes = contribuintes.Count;
+        _cobrancasEmAberto = cobrancas.Count(c => c.Status is StatusCobranca.Pendente or StatusCobranca.Vencido);
+        _arrecadadoMes = cobrancas
+            .Where(c => c.Status == StatusCobranca.Pago &&
+                        c.DataPagamento?.Month == DateTime.Today.Month &&
+                        c.DataPagamento?.Year == DateTime.Today.Year)
+            .Sum(c => c.Valor);
+        _processosAtivos = (await JuridicoService.GetProcessosAsync()).Count(p => p.Situacao == "Em andamento");
+        _ultimasCobrancas = cobrancas.OrderByDescending(c => c.Vencimento).Take(5).ToList();
+        _proximasAudiencias = audiencias
+            .Where(a => a.Situacao == "Agendada" && a.DataHora >= DateTime.Today)
+            .OrderBy(a => a.DataHora)
+            .Take(4)
+            .ToList();
+
+        var months = Enumerable.Range(0, 6).Select(i => DateTime.Today.AddMonths(-5 + i)).ToList();
+        _chartLabels = months.Select(m => m.ToString("MMM/yy")).ToArray();
+        _chartSeries = new List<ChartSeries>
+        {
+            new ChartSeries
+            {
+                Name = "Arrecadado (R$)",
+                Data = months.Select(m =>
+                    (double)cobrancas
+                        .Where(c => c.Status == StatusCobranca.Pago &&
+                                    c.DataPagamento?.Month == m.Month &&
+                                    c.DataPagamento?.Year == m.Year)
+                        .Sum(c => c.Valor))
+                .ToArray()
+            }
+        };
+    }
+
+    private Color GetStatusColor(StatusCobranca status) => status switch
+    {
+        StatusCobranca.Pago => Color.Success,
+        StatusCobranca.Vencido => Color.Error,
+        StatusCobranca.Pendente => Color.Info,
+        _ => Color.Default
+    };
+}

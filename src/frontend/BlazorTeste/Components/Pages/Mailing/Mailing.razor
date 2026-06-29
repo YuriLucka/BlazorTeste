@@ -1,0 +1,72 @@
+@page "/mailing"
+@inject MailingService MailingService
+
+<PageTitle>Mailing — SindERP</PageTitle>
+
+<div class="d-flex align-center justify-space-between mb-4">
+    <MudText Typo="Typo.h5" Style="font-weight:600;">Mailing</MudText>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary"
+               StartIcon="@Icons.Material.Filled.Add">
+        Nova Campanha
+    </MudButton>
+</div>
+
+<MudGrid Spacing="3">
+    @foreach (var campanha in _campanhas)
+    {
+        <MudItem xs="12" sm="6" md="4">
+            <MudCard Elevation="2" Class="rounded-xl" Style="height:100%;">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <div class="d-flex align-center justify-space-between">
+                            <MudChip T="string" Size="Size.Small"
+                                     Color="@GetStatusColor(campanha.Status)"
+                                     Variant="Variant.Filled">
+                                @campanha.Status
+                            </MudChip>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                @(campanha.DataEnvio.HasValue ? campanha.DataEnvio.Value.ToString("dd/MM/yyyy") : "Sem data")
+                            </MudText>
+                        </div>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent Class="pt-0">
+                    <MudText Typo="Typo.subtitle2" Style="font-weight:600;" Class="mb-1">
+                        @campanha.Assunto
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-2">
+                        @campanha.Destinatarios
+                    </MudText>
+                    <div class="d-flex align-center gap-1">
+                        <MudIcon Icon="@Icons.Material.Filled.People" Size="Size.Small" Color="Color.Secondary" />
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            @campanha.TotalDestinatarios.ToString("N0") destinatários
+                        </MudText>
+                    </div>
+                </MudCardContent>
+                <MudCardActions>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="ml-2">@campanha.Criador</MudText>
+                    <MudSpacer />
+                    <MudIconButton Icon="@Icons.Material.Filled.MoreVert" Size="Size.Small" />
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private List<Campanha> _campanhas = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _campanhas = (await MailingService.GetAllAsync()).OrderByDescending(c => c.DataEnvio).ToList();
+    }
+
+    private Color GetStatusColor(StatusCampanha status) => status switch
+    {
+        StatusCampanha.Enviada => Color.Success,
+        StatusCampanha.Agendada => Color.Info,
+        StatusCampanha.Erro => Color.Error,
+        _ => Color.Default
+    };
+}

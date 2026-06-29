@@ -1,0 +1,218 @@
+@page "/configuracoes"
+@inject ConfiguracaoService ConfiguracaoService
+@inject AppStateService AppState
+@inject ISnackbar Snackbar
+
+<PageTitle>Configurações — SindERP</PageTitle>
+
+<div class="d-flex align-center justify-space-between mb-4">
+    <div>
+        <MudText Typo="Typo.h5" Style="font-weight:600;">Configurações</MudText>
+        @if (AppState.EntidadeAtiva is not null)
+        {
+            <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined">
+                @AppState.EntidadeAtiva.Sigla
+            </MudChip>
+        }
+    </div>
+</div>
+
+<MudCard Elevation="2" Class="rounded-xl">
+    <MudCardContent Class="pt-0">
+        <MudTabs Elevation="0" PanelClass="pt-4">
+
+            <!-- Tab Geral -->
+            <MudTabPanel Text="Geral" Icon="@Icons.Material.Filled.Info">
+                @if (_geral is not null)
+                {
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_geral.ResponsavelTecnico" Label="Responsável Técnico"
+                                          Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_geral.EmailContato" Label="E-mail de Contato"
+                                          Variant="Variant.Outlined" InputType="InputType.Email" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_geral.Telefone" Label="Telefone"
+                                          Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="_geral.Endereco" Label="Endereço Completo"
+                                          Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
+                                       OnClick="@(() => Snackbar.Add("Configurações gerais salvas!", Severity.Success))">
+                                Salvar
+                            </MudButton>
+                        </MudItem>
+                    </MudGrid>
+                }
+            </MudTabPanel>
+
+            <!-- Tab Cobranças -->
+            <MudTabPanel Text="Cobranças" Icon="@Icons.Material.Filled.RequestQuote">
+                @if (_cobranca is not null)
+                {
+                    <MudGrid Spacing="3" Class="mb-4">
+                        <MudItem xs="6" sm="3">
+                            <MudNumericField @bind-Value="_cobranca.PercentualMulta" Label="Multa (%)"
+                                             Variant="Variant.Outlined" Format="N2" />
+                        </MudItem>
+                        <MudItem xs="6" sm="3">
+                            <MudNumericField @bind-Value="_cobranca.PercentualJurosDia" Label="Juros/Dia (%)"
+                                             Variant="Variant.Outlined" Format="N3" />
+                        </MudItem>
+                        <MudItem xs="6" sm="3">
+                            <MudNumericField @bind-Value="_cobranca.DiasCarencia" Label="Dias Carência"
+                                             Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="6" sm="3">
+                            <MudNumericField @bind-Value="_cobranca.DiaVencimento" Label="Dia Vencimento"
+                                             Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudSwitch @bind-Value="_cobranca.EmissaoAutomatica" Color="Color.Primary"
+                                       Label="Emissão automática de cobranças" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudText Typo="Typo.overline" Color="Color.Secondary" Class="mb-2 d-block">Faixas de Cobrança</MudText>
+                    <MudTable T="FaixaCobranca" Items="_cobranca.Faixas" Dense="true" Elevation="0" Class="mb-3">
+                        <HeaderContent>
+                            <MudTh>Descrição</MudTh>
+                            <MudTh>Capital Mín.</MudTh>
+                            <MudTh>Capital Máx.</MudTh>
+                            <MudTh>Valor Fixo</MudTh>
+                            <MudTh>% Capital</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Descricao</MudTd>
+                            <MudTd>@context.CapitalSocialMin.ToString("C0")</MudTd>
+                            <MudTd>@(context.CapitalSocialMax == decimal.MaxValue ? "Acima" : context.CapitalSocialMax.ToString("C0"))</MudTd>
+                            <MudTd>@context.ValorFixo.ToString("C2")</MudTd>
+                            <MudTd>@context.PercentualCapital.ToString("N2")%</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
+                               OnClick="@(() => Snackbar.Add("Parâmetros de cobrança salvos!", Severity.Success))">
+                        Salvar
+                    </MudButton>
+                }
+            </MudTabPanel>
+
+            <!-- Tab E-mail -->
+            <MudTabPanel Text="E-mail" Icon="@Icons.Material.Filled.Email">
+                @if (_email is not null)
+                {
+                    <MudGrid Spacing="3">
+                        <MudItem xs="8">
+                            <MudTextField @bind-Value="_email.ServidorSmtp" Label="Servidor SMTP"
+                                          Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="4">
+                            <MudNumericField @bind-Value="_email.Porta" Label="Porta" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_email.EmailRemetente" Label="E-mail Remetente"
+                                          Variant="Variant.Outlined" InputType="InputType.Email" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_email.NomeRemetente" Label="Nome Remetente"
+                                          Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudSwitch @bind-Value="_email.UsarSsl" Color="Color.Primary" Label="Usar SSL/TLS" />
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudSwitch @bind-Value="_email.Ativo" Color="Color.Primary" Label="E-mail ativo" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Send" Class="mr-2"
+                                       OnClick="@(() => Snackbar.Add("Teste enviado para " + _email.EmailRemetente, Severity.Info))">
+                                Testar Conexão
+                            </MudButton>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
+                                       OnClick="@(() => Snackbar.Add("Configurações de e-mail salvas!", Severity.Success))">
+                                Salvar
+                            </MudButton>
+                        </MudItem>
+                    </MudGrid>
+                }
+            </MudTabPanel>
+
+            <!-- Tab Banco -->
+            <MudTabPanel Text="Banco" Icon="@Icons.Material.Filled.AccountBalance">
+                @if (_banco is not null)
+                {
+                    <MudAlert Severity="Severity.Info" Class="mb-3">
+                        Os dados bancários são usados na geração de boletos (Guia Sindical e Cobranças).
+                    </MudAlert>
+                    <MudGrid Spacing="3">
+                        <MudItem xs="12">
+                            <MudSelect T="string" @bind-Value="_banco.Banco" Label="Banco" Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("001 - Banco do Brasil")">001 - Banco do Brasil</MudSelectItem>
+                                <MudSelectItem Value="@("104 - Caixa Econômica Federal")">104 - Caixa Econômica Federal</MudSelectItem>
+                                <MudSelectItem Value="@("341 - Itaú Unibanco")">341 - Itaú Unibanco</MudSelectItem>
+                                <MudSelectItem Value="@("748 - Sicredi")">748 - Sicredi</MudSelectItem>
+                                <MudSelectItem Value="@("033 - Santander")">033 - Santander</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudTextField @bind-Value="_banco.Agencia" Label="Agência" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudTextField @bind-Value="_banco.Conta" Label="Conta" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="6" sm="4">
+                            <MudTextField @bind-Value="_banco.Carteira" Label="Carteira" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="6" sm="6">
+                            <MudTextField @bind-Value="_banco.Cedente" Label="Cedente" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="6" sm="6">
+                            <MudTextField @bind-Value="_banco.CodigoCedente" Label="Código Cedente" Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Save"
+                                       OnClick="@(() => Snackbar.Add("Dados bancários salvos!", Severity.Success))">
+                                Salvar
+                            </MudButton>
+                        </MudItem>
+                    </MudGrid>
+                }
+            </MudTabPanel>
+
+            <!-- Tab Permissões -->
+            <MudTabPanel Text="Permissões" Icon="@Icons.Material.Filled.Security">
+                <MudText Typo="Typo.body1" Class="mb-3">
+                    Gerencie as permissões de acesso dos usuários por entidade.
+                </MudText>
+                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="/usuarios"
+                           StartIcon="@Icons.Material.Filled.People">
+                    Ir para Usuários
+                </MudButton>
+            </MudTabPanel>
+
+        </MudTabs>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private ConfiguracaoGeral? _geral;
+    private ConfiguracaoCobranca? _cobranca;
+    private ConfiguracaoEmail? _email;
+    private ConfiguracaoBanco? _banco;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var entId = AppState.EntidadeAtiva?.Id ?? 1;
+        _geral = await ConfiguracaoService.GetGeralAsync(entId);
+        _cobranca = await ConfiguracaoService.GetCobrancaAsync(entId);
+        _email = await ConfiguracaoService.GetEmailAsync(entId);
+        _banco = await ConfiguracaoService.GetBancoAsync(entId);
+    }
+}

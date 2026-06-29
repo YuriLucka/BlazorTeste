@@ -1,0 +1,119 @@
+@page "/login"
+@layout LoginLayout
+@inject TokenService TokenService
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@using BlazorTeste.Services.Auth
+@using BlazorTeste.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Http
+@using System.Net.Http.Json
+
+<PageTitle>Login — SindERP</PageTitle>
+
+<div style="display:flex; justify-content:center; align-items:center; min-height:100vh;
+            background:linear-gradient(135deg, #1565C0 0%, #0D47A1 60%, #01579B 100%);">
+    <MudCard Elevation="8" Class="rounded-xl" Style="width:100%; max-width:420px; margin:1rem;">
+        <MudCardContent Class="pa-8">
+            <div class="d-flex flex-column align-center mb-6">
+                <MudAvatar Color="Color.Primary" Size="Size.Large" Style="width:64px; height:64px; font-size:2rem;" Class="mb-3">
+                    <MudIcon Icon="@Icons.Material.Filled.AccountBalance" Size="Size.Large" />
+                </MudAvatar>
+                <MudText Typo="Typo.h5" Color="Color.Primary" Style="font-weight:700; letter-spacing:.5px;">SindERP</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Sistema de Gestão Sindical</MudText>
+            </div>
+
+            @if (_erro != null)
+            {
+                <MudAlert Severity="Severity.Error" Class="mb-4" Dense="true">@_erro</MudAlert>
+            }
+
+            <MudTextField @bind-Value="_email"
+                          Label="E-mail"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Email"
+                          Class="mb-3"
+                          FullWidth="true" />
+
+            <MudTextField @bind-Value="_senha"
+                          Label="Senha"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Password"
+                          Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Lock"
+                          Class="mb-5"
+                          FullWidth="true" />
+
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       FullWidth="true"
+                       Size="Size.Large"
+                       OnClick="Entrar"
+                       Disabled="_loading"
+                       Class="mb-4">
+                @(_loading ? "Entrando..." : "Entrar")
+            </MudButton>
+
+            <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined">
+                <MudText Typo="Typo.caption">
+                    Senha padrão de todos os usuários seed: <b>Senha@123</b>
+                </MudText>
+            </MudAlert>
+        </MudCardContent>
+    </MudCard>
+</div>
+
+@code {
+    private string _email = "";
+    private string _senha = "";
+    private string? _erro;
+    private bool _loading;
+
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateTask;
+        if (state.User.Identity?.IsAuthenticated == true)
+            Navigation.NavigateTo("/", replace: true);
+    }
+
+    private async Task Entrar()
+    {
+        _erro = null;
+
+        if (string.IsNullOrWhiteSpace(_email) || string.IsNullOrWhiteSpace(_senha))
+        {
+            _erro = "Informe e-mail e senha.";
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, "api/auth/login");
+            req.Content = JsonContent.Create(new LoginRequest { Email = _email.Trim(), Senha = _senha });
+            var response = await Http.SendAsync(req);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _erro = "E-mail ou senha inválidos.";
+                return;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            TokenService.SetToken(result!.AccessToken);
+            Navigation.NavigateTo("/", replace: true);
+        }
+        catch
+        {
+            _erro = "Não foi possível conectar ao servidor.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

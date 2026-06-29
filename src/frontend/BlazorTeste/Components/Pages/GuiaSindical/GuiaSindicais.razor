@@ -1,0 +1,281 @@
+@page "/guia-sindical"
+@using BlazorTeste.Components.Dialogs.GuiaSindical
+@inject GuiaSindicalService GuiaSindicalService
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+
+<PageTitle>Guia Sindical — SindERP</PageTitle>
+
+<!-- KPI Cards -->
+<MudGrid Spacing="3" Class="mb-4">
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center justify-space-between">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Total Emitido</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700;">@_all.Sum(g => g.ValorTotal).ToString("C2")</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.Description" Color="Color.Primary" Style="font-size:2.2rem;" />
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center justify-space-between">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Arrecadado</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700;">@_pagas.Sum(g => g.ValorTotal).ToString("C2")</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Style="font-size:2.2rem;" />
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center justify-space-between">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">A Receber</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700;">@_pendentes.Sum(g => g.ValorTotal).ToString("C2")</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.Pending" Color="Color.Info" Style="font-size:2.2rem;" />
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+    <MudItem xs="12" sm="6" md="3">
+        <MudCard Elevation="2" Class="rounded-xl">
+            <MudCardContent Class="pa-4">
+                <div class="d-flex align-center justify-space-between">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Vencidas</MudText>
+                        <MudText Typo="Typo.h6" Style="font-weight:700; color:var(--mud-palette-error);">@_vencidas.Count</MudText>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.Warning" Color="Color.Error" Style="font-size:2.2rem;" />
+                </div>
+            </MudCardContent>
+        </MudCard>
+    </MudItem>
+</MudGrid>
+
+<!-- Header -->
+<div class="d-flex align-center justify-space-between mb-4">
+    <div>
+        <MudText Typo="Typo.h5" Style="font-weight:600;">Guia Sindical</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">@_all.Count emissões</MudText>
+    </div>
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+               OnClick="OpenEmitirGuia">
+        Emitir Guia Sindical
+    </MudButton>
+</div>
+
+<!-- Main Card with Tabs -->
+<MudCard Elevation="2" Class="rounded-xl">
+    <MudCardContent Class="pt-0">
+        <MudTabs Elevation="0" PanelClass="pt-3">
+            <MudTabPanel Text="Todas" BadgeData="@_all.Count" BadgeColor="Color.Default">
+                @GuiaTable(_all)
+            </MudTabPanel>
+            <MudTabPanel Text="Pendentes" BadgeData="@_pendentes.Count" BadgeColor="Color.Info">
+                @GuiaTable(_pendentes)
+            </MudTabPanel>
+            <MudTabPanel Text="Pagas" BadgeData="@_pagas.Count" BadgeColor="Color.Success">
+                @GuiaTable(_pagas)
+            </MudTabPanel>
+            <MudTabPanel Text="Vencidas" BadgeData="@_vencidas.Count" BadgeColor="Color.Error">
+                @GuiaTable(_vencidas)
+            </MudTabPanel>
+        </MudTabs>
+    </MudCardContent>
+</MudCard>
+
+<!-- Detail Drawer -->
+<MudDrawer @bind-Open="_drawerOpen" Anchor="Anchor.End" Elevation="4" Width="480px" Variant="DrawerVariant.Temporary">
+    <div style="display:flex;flex-direction:column;height:100%;overflow:hidden;">
+    @if (_selected is not null)
+    {
+        <MudDrawerHeader Class="pa-4">
+            <div class="d-flex align-center justify-space-between" style="width:100%;">
+                <div>
+                    <MudText Typo="Typo.subtitle1" Style="font-weight:600;">@_selected.NumeroDocumento</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Guia Sindical</MudText>
+                </div>
+                <MudIconButton Icon="@Icons.Material.Filled.Close" OnClick="@(() => _drawerOpen = false)" />
+            </div>
+        </MudDrawerHeader>
+        <MudDivider />
+        <div class="pa-4" style="flex:1;overflow-y:auto;">
+            <MudTabs Elevation="0">
+                <MudTabPanel Text="Dados">
+                    <MudText Typo="Typo.subtitle1" Style="font-weight:600;" Class="mb-1">@_selected.RazaoSocialContribuinte</MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-3">@_selected.Cnpj</MudText>
+
+                    <MudGrid Spacing="2" Class="mb-3">
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Ano Referência</MudText>
+                            <MudText Typo="Typo.body2" Style="font-weight:600;">@_selected.AnoReferencia</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Data Emissão</MudText>
+                            <MudText Typo="Typo.body2">@_selected.DataEmissao.ToString("dd/MM/yyyy")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Vencimento</MudText>
+                            <MudText Typo="Typo.body2">@_selected.Vencimento.ToString("dd/MM/yyyy")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Status</MudText>
+                            <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(_selected.Status)" Variant="Variant.Filled">
+                                @_selected.Status
+                            </MudChip>
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudDivider Class="mb-3" />
+
+                    <MudGrid Spacing="2">
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Valor Base</MudText>
+                            <MudText Typo="Typo.body2">@_selected.ValorBase.ToString("C2")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Multa</MudText>
+                            <MudText Typo="Typo.body2" Style="@(_selected.Multa > 0 ? "color:var(--mud-palette-error);" : "")">
+                                @_selected.Multa.ToString("C2")
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Juros</MudText>
+                            <MudText Typo="Typo.body2" Style="@(_selected.Juros > 0 ? "color:var(--mud-palette-warning);" : "")">
+                                @_selected.Juros.ToString("C2")
+                            </MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Total</MudText>
+                            <MudText Typo="Typo.subtitle1" Style="font-weight:700;">@_selected.ValorTotal.ToString("C2")</MudText>
+                        </MudItem>
+                        @if (_selected.DataPagamento.HasValue)
+                        {
+                            <MudItem xs="12">
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">Data Pagamento</MudText>
+                                <MudText Typo="Typo.body2" Style="color:var(--mud-palette-success);">
+                                    @_selected.DataPagamento.Value.ToString("dd/MM/yyyy")
+                                </MudText>
+                            </MudItem>
+                        }
+                    </MudGrid>
+                </MudTabPanel>
+
+                <MudTabPanel Text="Boleto">
+                    <MudAlert Severity="Severity.Info" Class="mb-3">
+                        Linha Digitável para pagamento
+                    </MudAlert>
+
+                    <MudTextField Value="@_selected.LinhaDigitavel" Label="Linha Digitável" Variant="Variant.Outlined"
+                                  ReadOnly="true" FullWidth="true" Class="mb-3"
+                                  Adornment="Adornment.End" AdornmentIcon="@Icons.Material.Filled.ContentCopy"
+                                  OnAdornmentClick="@(() => Snackbar.Add("Copiado!", Severity.Success))" />
+
+                    <MudPaper Outlined="true" Class="pa-4 mb-4 text-center" Style="font-family:monospace; letter-spacing:2px; font-size:0.7rem; overflow-x:auto;">
+                        ||| |||| || |||||||| ||| ||||| || ||||| |||||||| ||| || |||
+                        <br />|| |||||||| |||| || ||||| |||||||| ||| || |||||||||
+                    </MudPaper>
+
+                    <div class="d-flex gap-2">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Print" FullWidth="true"
+                                   OnClick="@(() => Snackbar.Add("Gerando 2ª via...", Severity.Info))">
+                            Emitir 2ª Via
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" StartIcon="@Icons.Material.Filled.Download" FullWidth="true"
+                                   OnClick="@(() => Snackbar.Add("Baixando PDF...", Severity.Info))">
+                            Baixar PDF
+                        </MudButton>
+                    </div>
+                </MudTabPanel>
+            </MudTabs>
+        </div>
+    }
+    </div>
+</MudDrawer>
+
+@code {
+    private List<GuiaSindical> _all = new();
+    private List<GuiaSindical> _pendentes = new();
+    private List<GuiaSindical> _pagas = new();
+    private List<GuiaSindical> _vencidas = new();
+    private GuiaSindical? _selected;
+    private bool _drawerOpen;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _all = await GuiaSindicalService.GetAllAsync();
+        _pendentes = _all.Where(g => g.Status == StatusGuia.Pendente).ToList();
+        _pagas = _all.Where(g => g.Status == StatusGuia.Paga).ToList();
+        _vencidas = _all.Where(g => g.Status == StatusGuia.Vencida).ToList();
+    }
+
+    private void OpenDetail(GuiaSindical item)
+    {
+        _selected = item;
+        _drawerOpen = true;
+    }
+
+    private Color GetStatusColor(StatusGuia s) => s switch
+    {
+        StatusGuia.Paga => Color.Success,
+        StatusGuia.Pendente => Color.Info,
+        StatusGuia.Vencida => Color.Error,
+        _ => Color.Default
+    };
+
+    private async Task OpenEmitirGuia()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseOnEscapeKey = true, CloseButton = true };
+        var dialog = await DialogService.ShowAsync<EmitirGuiaSindicalDialog>("Emitir Guia Sindical", options);
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+        {
+            Snackbar.Add("Guia Sindical emitida com sucesso!", Severity.Success);
+            _all = await GuiaSindicalService.GetAllAsync();
+            _pendentes = _all.Where(g => g.Status == StatusGuia.Pendente).ToList();
+            _pagas = _all.Where(g => g.Status == StatusGuia.Paga).ToList();
+            _vencidas = _all.Where(g => g.Status == StatusGuia.Vencida).ToList();
+        }
+    }
+
+    private RenderFragment GuiaTable(List<GuiaSindical> items) => __builder =>
+    {
+        <MudTable T="GuiaSindical" Items="items" Dense="true" Hover="true" Elevation="0"
+                  RowClassFunc="@((_, _) => "cursor-pointer")"
+                  OnRowClick="@((TableRowClickEventArgs<GuiaSindical> r) => OpenDetail(r.Item))">
+            <HeaderContent>
+                <MudTh>Empresa</MudTh>
+                <MudTh>CNPJ</MudTh>
+                <MudTh>Ano Ref.</MudTh>
+                <MudTh>Valor Total</MudTh>
+                <MudTh>Vencimento</MudTh>
+                <MudTh>Status</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd><MudText Style="font-weight:600;">@context.RazaoSocialContribuinte</MudText></MudTd>
+                <MudTd><MudText Typo="Typo.body2">@context.Cnpj</MudText></MudTd>
+                <MudTd>@context.AnoReferencia</MudTd>
+                <MudTd><strong>@context.ValorTotal.ToString("C2")</strong></MudTd>
+                <MudTd>@context.Vencimento.ToString("dd/MM/yyyy")</MudTd>
+                <MudTd>
+                    <MudChip T="string" Size="Size.Small" Color="@GetStatusColor(context.Status)" Variant="Variant.Filled">
+                        @context.Status
+                    </MudChip>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Color="Color.Secondary" Class="pa-4">Nenhum registro encontrado.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    };
+}

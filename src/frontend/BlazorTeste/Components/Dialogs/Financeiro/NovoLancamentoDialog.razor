@@ -1,0 +1,195 @@
+@inject FinanceiroService FinanceiroService
+@inject ConfiguracaoService ConfiguracaoService
+@inject AppStateService AppState
+
+<MudDialog Style="min-width:580px; max-width:660px;">
+    <TitleContent>
+        <div class="d-flex align-center gap-3">
+            <MudAvatar Color="@(_tipo == TipoLancamento.Entrada ? Color.Success : Color.Error)" Size="Size.Medium">
+                <MudIcon Icon="@(_tipo == TipoLancamento.Entrada ? Icons.Material.Filled.TrendingUp : Icons.Material.Filled.TrendingDown)" />
+            </MudAvatar>
+            <div>
+                <MudText Typo="Typo.h6" Style="font-weight:600;">Novo Lançamento</MudText>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Receita ou despesa financeira</MudText>
+            </div>
+        </div>
+    </TitleContent>
+    <DialogContent>
+        <!-- Tipo toggle -->
+        <div class="d-flex gap-2 mb-4">
+            <MudButton FullWidth="true"
+                       Variant="@(_tipo == TipoLancamento.Entrada ? Variant.Filled : Variant.Outlined)"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Material.Filled.AddCircle"
+                       OnClick="@(() => _tipo = TipoLancamento.Entrada)">
+                Receita / Entrada
+            </MudButton>
+            <MudButton FullWidth="true"
+                       Variant="@(_tipo == TipoLancamento.Saida ? Variant.Filled : Variant.Outlined)"
+                       Color="Color.Error"
+                       StartIcon="@Icons.Material.Filled.RemoveCircle"
+                       OnClick="@(() => _tipo = TipoLancamento.Saida)">
+                Despesa / Saída
+            </MudButton>
+        </div>
+
+        <MudGrid Spacing="2">
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_descricao" Label="Descrição *" Variant="Variant.Outlined"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Description"
+                              FullWidth="true" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudDatePicker @bind-Date="_data" Label="Data *" Variant="Variant.Outlined"
+                               Editable="true" DateFormat="dd/MM/yyyy" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudNumericField @bind-Value="_valor" Label="Valor (R$) *" Variant="Variant.Outlined"
+                                 Min="0.01m" Format="N2"
+                                 Adornment="Adornment.Start" AdornmentText="R$" />
+            </MudItem>
+            <MudItem xs="6">
+                <MudSelect @bind-Value="_categoria" Label="Categoria" Variant="Variant.Outlined">
+                    @if (_tipo == TipoLancamento.Entrada)
+                    {
+                        <MudSelectItem Value="@("Contribuição Sindical")">Contribuição Sindical</MudSelectItem>
+                        <MudSelectItem Value="@("Contribuição Associativa")">Contribuição Associativa</MudSelectItem>
+                        <MudSelectItem Value="@("Taxa de Evento")">Taxa de Evento</MudSelectItem>
+                        <MudSelectItem Value="@("Multas e Juros")">Multas e Juros</MudSelectItem>
+                        <MudSelectItem Value="@("Convênios")">Convênios</MudSelectItem>
+                        <MudSelectItem Value="@("Outros")">Outros</MudSelectItem>
+                    }
+                    else
+                    {
+                        <MudSelectItem Value="@("Pessoal")">Pessoal</MudSelectItem>
+                        <MudSelectItem Value="@("Aluguel")">Aluguel</MudSelectItem>
+                        <MudSelectItem Value="@("Serviços de TI")">Serviços de TI</MudSelectItem>
+                        <MudSelectItem Value="@("Material de Escritório")">Material de Escritório</MudSelectItem>
+                        <MudSelectItem Value="@("Jurídico")">Jurídico</MudSelectItem>
+                        <MudSelectItem Value="@("Marketing / Comunicação")">Marketing / Comunicação</MudSelectItem>
+                        <MudSelectItem Value="@("Viagens e Eventos")">Viagens e Eventos</MudSelectItem>
+                        <MudSelectItem Value="@("Impostos e Taxas")">Impostos e Taxas</MudSelectItem>
+                        <MudSelectItem Value="@("Outros")">Outros</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+            <MudItem xs="6">
+                <MudSelect @bind-Value="_contaBancaria" Label="Conta bancária" Variant="Variant.Outlined">
+                    @foreach (var conta in _contasBancarias)
+                    {
+                        <MudSelectItem Value="@conta">@conta</MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+
+            @if (_tipo == TipoLancamento.Saida)
+            {
+                <MudItem xs="12">
+                    <MudAutocomplete T="string" @bind-Value="_fornecedor"
+                                     Label="Fornecedor" Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Business"
+                                     SearchFunc="BuscarFornecedor"
+                                     ToStringFunc="s => s"
+                                     FullWidth="true"
+                                     ResetValueOnEmptyText="true"
+                                     CoerceValue="true" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTextField @bind-Value="_notaFiscal" Label="Nota fiscal / NF-e"
+                                  Variant="Variant.Outlined" FullWidth="true" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_dataVencimento" Label="Vencimento"
+                                   Variant="Variant.Outlined" Editable="true" DateFormat="dd/MM/yyyy" />
+                </MudItem>
+            }
+
+            <MudItem xs="12">
+                <MudCheckBox @bind-Value="_realizado" Label="Já realizado / compensado" Color="Color.Primary" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudTextField @bind-Value="_observacao" Label="Observação"
+                              Variant="Variant.Outlined" Lines="2" FullWidth="true" />
+            </MudItem>
+        </MudGrid>
+
+        <!-- Preview -->
+        @if (_valor > 0 && !string.IsNullOrWhiteSpace(_descricao))
+        {
+            <MudPaper Outlined="true" Class="rounded-lg pa-3 mt-3"
+                      Style="@($"border-color: var(--mud-palette-{(_tipo == TipoLancamento.Entrada ? "success" : "error")})")">
+                <div class="d-flex justify-space-between align-center">
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">LANÇAMENTO</MudText>
+                        <MudText Typo="Typo.body2">@_descricao — @_categoria</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@(_data?.ToString("dd/MM/yyyy") ?? "-") · @_contaBancaria</MudText>
+                    </div>
+                    <MudText Typo="Typo.h6"
+                             Style="@($"font-weight:700; color:var(--mud-palette-{(_tipo == TipoLancamento.Entrada ? "success" : "error")})")">
+                        @((_tipo == TipoLancamento.Entrada ? "+" : "-") + _valor.ToString("C2"))
+                    </MudText>
+                </div>
+            </MudPaper>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="MudDialog.Cancel" Variant="Variant.Text">Cancelar</MudButton>
+        <MudButton OnClick="Salvar" Variant="Variant.Filled"
+                   Color="@(_tipo == TipoLancamento.Entrada ? Color.Success : Color.Error)"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   Disabled="@(string.IsNullOrWhiteSpace(_descricao) || _valor <= 0)">
+            Registrar Lançamento
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+
+    private TipoLancamento _tipo = TipoLancamento.Entrada;
+    private string _descricao = "";
+    private DateTime? _data = DateTime.Today;
+    private decimal _valor = 0m;
+    private string _categoria = "Contribuição Sindical";
+    private string _contaBancaria = "";
+    private string _fornecedor = "";
+    private string _notaFiscal = "";
+    private DateTime? _dataVencimento;
+    private bool _realizado = true;
+    private string _observacao = "";
+
+    private List<Fornecedor> _fornecedores = new();
+    private List<string> _contasBancarias = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var entidadeId = AppState.EntidadeAtiva?.Id ?? 0;
+
+        var bancoTask = ConfiguracaoService.GetBancoAsync(entidadeId);
+        var fornecedoresTask = FinanceiroService.GetFornecedoresAsync();
+        await Task.WhenAll(bancoTask, fornecedoresTask);
+
+        var banco = bancoTask.Result;
+        _fornecedores = fornecedoresTask.Result;
+
+        if (banco is not null && !string.IsNullOrEmpty(banco.Banco))
+        {
+            var label = $"{banco.Banco} - C/C {banco.Conta}";
+            _contasBancarias.Add(label);
+            _contaBancaria = label;
+        }
+    }
+
+    private Task<IEnumerable<string>> BuscarFornecedor(string value)
+    {
+        var nomes = _fornecedores.Select(f => f.Nome);
+        if (string.IsNullOrWhiteSpace(value))
+            return Task.FromResult(nomes);
+        return Task.FromResult(
+            nomes.Where(n => n.Contains(value, StringComparison.OrdinalIgnoreCase))
+        );
+    }
+
+    private void Salvar() => MudDialog.Close(DialogResult.Ok(true));
+}

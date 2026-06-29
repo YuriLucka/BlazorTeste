@@ -1,0 +1,2388 @@
+diff --git a/BlazorTeste.Api/Controllers/ConfiguracoesController.cs b/BlazorTeste.Api/Controllers/ConfiguracoesController.cs
+new file mode 100644
+index 0000000..7d61820
+--- /dev/null
++++ b/BlazorTeste.Api/Controllers/ConfiguracoesController.cs
+@@ -0,0 +1,45 @@
++using BlazorTeste.Api.Data;
++using BlazorTeste.Models;
++using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Mvc;
++using Microsoft.EntityFrameworkCore;
++
++namespace BlazorTeste.Api.Controllers;
++
++[Authorize]
++[ApiController]
++[Route("api/[controller]")]
++public class ConfiguracoesController(AppDbContext db) : ControllerBase
++{
++    [HttpGet("geral")]
++    public async Task<ActionResult<ConfiguracaoGeral>> GetGeral([FromQuery] int entidadeId)
++    {
++        var config = await db.Configuracoes.FirstOrDefaultAsync(c => c.EntidadeId == entidadeId);
++        if (config is null) return NotFound();
++        return config.Geral;
++    }
++
++    [HttpGet("cobranca")]
++    public async Task<ActionResult<ConfiguracaoCobranca>> GetCobranca([FromQuery] int entidadeId)
++    {
++        var config = await db.Configuracoes.FirstOrDefaultAsync(c => c.EntidadeId == entidadeId);
++        if (config is null) return NotFound();
++        return config.Cobranca;
++    }
++
++    [HttpGet("email")]
++    public async Task<ActionResult<ConfiguracaoEmail>> GetEmail([FromQuery] int entidadeId)
++    {
++        var config = await db.Configuracoes.FirstOrDefaultAsync(c => c.EntidadeId == entidadeId);
++        if (config is null) return NotFound();
++        return config.Email;
++    }
++
++    [HttpGet("banco")]
++    public async Task<ActionResult<ConfiguracaoBanco>> GetBanco([FromQuery] int entidadeId)
++    {
++        var config = await db.Configuracoes.FirstOrDefaultAsync(c => c.EntidadeId == entidadeId);
++        if (config is null) return NotFound();
++        return config.Banco;
++    }
++}
+diff --git a/BlazorTeste.Api/Controllers/EventosController.cs b/BlazorTeste.Api/Controllers/EventosController.cs
+new file mode 100644
+index 0000000..e9dc2f7
+--- /dev/null
++++ b/BlazorTeste.Api/Controllers/EventosController.cs
+@@ -0,0 +1,23 @@
++using BlazorTeste.Api.Data;
++using BlazorTeste.Models;
++using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Mvc;
++using Microsoft.EntityFrameworkCore;
++
++namespace BlazorTeste.Api.Controllers;
++
++[Authorize]
++[ApiController]
++[Route("api/[controller]")]
++public class EventosController(AppDbContext db) : ControllerBase
++{
++    [HttpGet]
++    public async Task<List<Evento>> GetAll([FromQuery] int? entidadeId = null)
++    {
++        var query = db.Eventos
++            .Include(e => e.Inscricoes)
++            .AsQueryable();
++        if (entidadeId.HasValue) query = query.Where(e => e.EntidadeId == entidadeId.Value);
++        return await query.ToListAsync();
++    }
++}
+diff --git a/BlazorTeste.Api/Controllers/NegociacoesController.cs b/BlazorTeste.Api/Controllers/NegociacoesController.cs
+new file mode 100644
+index 0000000..eaeb883
+--- /dev/null
++++ b/BlazorTeste.Api/Controllers/NegociacoesController.cs
+@@ -0,0 +1,24 @@
++using BlazorTeste.Api.Data;
++using BlazorTeste.Models;
++using Microsoft.AspNetCore.Authorization;
++using Microsoft.AspNetCore.Mvc;
++using Microsoft.EntityFrameworkCore;
++
++namespace BlazorTeste.Api.Controllers;
++
++[Authorize]
++[ApiController]
++[Route("api/[controller]")]
++public class NegociacoesController(AppDbContext db) : ControllerBase
++{
++    [HttpGet]
++    public async Task<List<Negociacao>> GetAll([FromQuery] int? entidadeId = null)
++    {
++        var query = db.Negociacoes
++            .Include(n => n.Parcelas)
++            .Include(n => n.CobrancasOriginais)
++            .AsQueryable();
++        if (entidadeId.HasValue) query = query.Where(n => n.EntidadeId == entidadeId.Value);
++        return await query.ToListAsync();
++    }
++}
+diff --git a/BlazorTeste.Api/Data/AppDbContext.cs b/BlazorTeste.Api/Data/AppDbContext.cs
+index 52ef0cd..e215fba 100644
+--- a/BlazorTeste.Api/Data/AppDbContext.cs
++++ b/BlazorTeste.Api/Data/AppDbContext.cs
+@@ -12,20 +12,23 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
+     public DbSet<LancamentoFinanceiro> LancamentosFinanceiros => Set<LancamentoFinanceiro>();
+     public DbSet<Fornecedor> Fornecedores => Set<Fornecedor>();
+     public DbSet<Processo> Processos => Set<Processo>();
+     public DbSet<Advogado> Advogados => Set<Advogado>();
+     public DbSet<Audiencia> Audiencias => Set<Audiencia>();
+     public DbSet<Campanha> Campanhas => Set<Campanha>();
+     public DbSet<GuiaSindical> GuiaSindicais => Set<GuiaSindical>();
+     public DbSet<RegistroBaixa> RegistrosBaixa => Set<RegistroBaixa>();
+     public DbSet<Relatorio> Relatorios => Set<Relatorio>();
+     public DbSet<Usuario> Usuarios => Set<Usuario>();
++    public DbSet<Negociacao> Negociacoes => Set<Negociacao>();
++    public DbSet<Evento> Eventos => Set<Evento>();
++    public DbSet<ConfiguracaoEntidade> Configuracoes => Set<ConfiguracaoEntidade>();
+ 
+     private static readonly JsonSerializerOptions _json = new();
+ 
+     protected override void OnModelCreating(ModelBuilder modelBuilder)
+     {
+         modelBuilder.Entity<Entidade>(b =>
+         {
+             b.Property(e => e.Cnaes)
+                 .HasConversion(
+                     v => JsonSerializer.Serialize(v, _json),
+@@ -61,12 +64,48 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
+             });
+         });
+ 
+         modelBuilder.Entity<Usuario>(b =>
+         {
+             b.Property(u => u.Permissoes)
+                 .HasConversion(
+                     v => JsonSerializer.Serialize(v, _json),
+                     v => JsonSerializer.Deserialize<List<PermissaoEntidade>>(v, _json) ?? new());
+         });
++
++        modelBuilder.Entity<Negociacao>(b =>
++        {
++            b.OwnsMany(n => n.Parcelas, owned =>
++            {
++                owned.ToTable("NegociacaoParcelas");
++                owned.WithOwner().HasForeignKey("NegociacaoId");
++            });
++            b.OwnsMany(n => n.CobrancasOriginais, owned =>
++            {
++                owned.ToTable("NegociacaoCobrancasOriginais");
++                owned.WithOwner().HasForeignKey("NegociacaoId");
++            });
++        });
++
++        modelBuilder.Entity<Evento>(b =>
++        {
++            b.OwnsMany(e => e.Inscricoes, owned =>
++            {
++                owned.ToTable("EventoInscricoes");
++                owned.WithOwner().HasForeignKey("EventoId");
++            });
++        });
++
++        modelBuilder.Entity<ConfiguracaoEntidade>(b =>
++        {
++            b.HasKey(c => c.EntidadeId);
++            b.OwnsOne(c => c.Geral, o => o.ToJson());
++            b.OwnsOne(c => c.Cobranca, o =>
++            {
++                o.ToJson();
++                o.OwnsMany(cc => cc.Faixas);
++            });
++            b.OwnsOne(c => c.Email, o => o.ToJson());
++            b.OwnsOne(c => c.Banco, o => o.ToJson());
++        });
+     }
+ }
+diff --git a/BlazorTeste.Api/Data/SeedData.cs b/BlazorTeste.Api/Data/SeedData.cs
+index 70494a1..df20372 100644
+--- a/BlazorTeste.Api/Data/SeedData.cs
++++ b/BlazorTeste.Api/Data/SeedData.cs
+@@ -282,12 +282,209 @@ public static class SeedData
+                 new Relatorio { Nome = "Devedores Jurídico", Descricao = "Contribuintes com processos de cobrança judicial", Categoria = CategoriaRelatorio.Juridico, Formato = FormatoRelatorio.Excel, Icone = "GavelRounded" },
+                 new Relatorio { Nome = "Inscrições por Evento", Descricao = "Lista de inscritos com situação de pagamento e presença", Categoria = CategoriaRelatorio.Eventos, Formato = FormatoRelatorio.Ambos, Icone = "Groups" },
+                 new Relatorio { Nome = "Faturamento de Eventos", Descricao = "Receita por evento e tipo de inscrição", Categoria = CategoriaRelatorio.Eventos, Formato = FormatoRelatorio.Excel, Icone = "AttachMoney" },
+                 new Relatorio { Nome = "Lista de Hotel", Descricao = "Relação de hospedagem por evento e participante", Categoria = CategoriaRelatorio.Eventos, Formato = FormatoRelatorio.PDF, Icone = "Hotel" },
+                 new Relatorio { Nome = "Guias Emitidas", Descricao = "Relação de Guias Sindicais emitidas por período", Categoria = CategoriaRelatorio.GuiaSindical, Formato = FormatoRelatorio.Ambos, Icone = "Description" },
+                 new Relatorio { Nome = "Guias Pagas", Descricao = "Guias Sindicais pagas com data e valor de pagamento", Categoria = CategoriaRelatorio.GuiaSindical, Formato = FormatoRelatorio.Ambos, Icone = "CheckCircle" },
+                 new Relatorio { Nome = "Evasão Sindical", Descricao = "Contribuintes que não emitiram Guia Sindical no ano", Categoria = CategoriaRelatorio.GuiaSindical, Formato = FormatoRelatorio.Excel, Icone = "TrendingDown" }
+             );
+             db.SaveChanges();
+         }
++
++        if (!db.Negociacoes.Any() && db.Contribuintes.Any())
++        {
++            var entidade1 = db.Entidades.OrderBy(e => e.Id).First();
++            var contribs = db.Contribuintes.Where(c => c.EntidadeId == entidade1.Id).OrderBy(c => c.Id).Take(6).ToList();
++            if (contribs.Count >= 4)
++            {
++                db.Negociacoes.AddRange(
++                    new Negociacao
++                    {
++                        EntidadeId = entidade1.Id, ContribuinteId = contribs[0].Id, RazaoSocialContribuinte = contribs[0].RazaoSocial,
++                        DataAbertura = new DateTime(2026,3,10), DebitoOriginal = 8500m, Desconto = 850m, ValorNegociado = 7650m,
++                        NumeroParcelas = 6, Status = StatusNegociacao.EmAndamento, Observacoes = "Negociação realizada em 10/03/2026.",
++                        CobrancasOriginais = new()
++                        {
++                            new() { Tipo = "Sindical", AnoReferencia = 2024, ValorOriginal = 3200m, Multa = 64m, Juros = 105.6m },
++                            new() { Tipo = "Associativa", AnoReferencia = 2024, ValorOriginal = 1800m, Multa = 36m, Juros = 59.4m },
++                            new() { Tipo = "Sindical", AnoReferencia = 2023, ValorOriginal = 2800m, Multa = 56m, Juros = 92.4m }
++                        },
++                        Parcelas = new()
++                        {
++                            new() { Numero = 1, Valor = 1275m, Vencimento = new DateTime(2026,4,10), Pago = true, DataPagamento = new DateTime(2026,4,8) },
++                            new() { Numero = 2, Valor = 1275m, Vencimento = new DateTime(2026,5,10), Pago = true, DataPagamento = new DateTime(2026,5,9) },
++                            new() { Numero = 3, Valor = 1275m, Vencimento = new DateTime(2026,6,10), Pago = false },
++                            new() { Numero = 4, Valor = 1275m, Vencimento = new DateTime(2026,7,10), Pago = false },
++                            new() { Numero = 5, Valor = 1275m, Vencimento = new DateTime(2026,8,10), Pago = false },
++                            new() { Numero = 6, Valor = 1275m, Vencimento = new DateTime(2026,9,10), Pago = false }
++                        }
++                    },
++                    new Negociacao
++                    {
++                        EntidadeId = entidade1.Id, ContribuinteId = contribs[1].Id, RazaoSocialContribuinte = contribs[1].RazaoSocial,
++                        DataAbertura = new DateTime(2025,11,5), DataConclusao = new DateTime(2026,5,5),
++                        DebitoOriginal = 4200m, Desconto = 420m, ValorNegociado = 3780m,
++                        NumeroParcelas = 3, Status = StatusNegociacao.Concluida, Observacoes = "Negociação concluída com sucesso.",
++                        CobrancasOriginais = new()
++                        {
++                            new() { Tipo = "Sindical", AnoReferencia = 2024, ValorOriginal = 2200m, Multa = 44m, Juros = 72.6m },
++                            new() { Tipo = "Confederativa", AnoReferencia = 2024, ValorOriginal = 1200m, Multa = 24m, Juros = 39.6m }
++                        },
++                        Parcelas = new()
++                        {
++                            new() { Numero = 1, Valor = 1260m, Vencimento = new DateTime(2025,12,5), Pago = true, DataPagamento = new DateTime(2025,12,3) },
++                            new() { Numero = 2, Valor = 1260m, Vencimento = new DateTime(2026,1,5), Pago = true, DataPagamento = new DateTime(2026,1,4) },
++                            new() { Numero = 3, Valor = 1260m, Vencimento = new DateTime(2026,2,5), Pago = true, DataPagamento = new DateTime(2026,2,5) }
++                        }
++                    },
++                    new Negociacao
++                    {
++                        EntidadeId = entidade1.Id, ContribuinteId = contribs[2].Id, RazaoSocialContribuinte = contribs[2].RazaoSocial,
++                        DataAbertura = new DateTime(2026,1,20), DebitoOriginal = 15000m, Desconto = 1500m, ValorNegociado = 13500m,
++                        NumeroParcelas = 12, Status = StatusNegociacao.Inadimplente, Observacoes = "Parcelas 3 e 4 em atraso.",
++                        CobrancasOriginais = new()
++                        {
++                            new() { Tipo = "Sindical", AnoReferencia = 2024, ValorOriginal = 6500m, Multa = 130m, Juros = 214.5m },
++                            new() { Tipo = "Sindical", AnoReferencia = 2023, ValorOriginal = 5800m, Multa = 116m, Juros = 191.4m },
++                            new() { Tipo = "Associativa", AnoReferencia = 2024, ValorOriginal = 1800m, Multa = 36m, Juros = 59.4m }
++                        },
++                        Parcelas = Enumerable.Range(1, 12).Select(n => new ParcelaNegociacao
++                        {
++                            Numero = n, Valor = 1125m,
++                            Vencimento = new DateTime(2026, 2, 20).AddMonths(n - 1),
++                            Pago = n <= 2,
++                            DataPagamento = n == 1 ? new DateTime(2026,2,18) : n == 2 ? new DateTime(2026,3,19) : null
++                        }).ToList()
++                    },
++                    new Negociacao
++                    {
++                        EntidadeId = entidade1.Id, ContribuinteId = contribs[3].Id, RazaoSocialContribuinte = contribs[3].RazaoSocial,
++                        DataAbertura = new DateTime(2026,2,1), DebitoOriginal = 3100m, Desconto = 0m, ValorNegociado = 3100m,
++                        NumeroParcelas = 2, Status = StatusNegociacao.Cancelada, Observacoes = "Contribuinte desistiu da negociação.",
++                        CobrancasOriginais = new()
++                        {
++                            new() { Tipo = "Associativa", AnoReferencia = 2025, ValorOriginal = 1600m, Multa = 32m, Juros = 52.8m },
++                            new() { Tipo = "Confederativa", AnoReferencia = 2025, ValorOriginal = 1200m, Multa = 24m, Juros = 39.6m }
++                        },
++                        Parcelas = new()
++                        {
++                            new() { Numero = 1, Valor = 1550m, Vencimento = new DateTime(2026,3,1), Pago = false },
++                            new() { Numero = 2, Valor = 1550m, Vencimento = new DateTime(2026,4,1), Pago = false }
++                        }
++                    }
++                );
++                db.SaveChanges();
++            }
++        }
++
++        if (!db.Eventos.Any() && db.Entidades.Any())
++        {
++            var entidade1 = db.Entidades.OrderBy(e => e.Id).First();
++            db.Eventos.AddRange(
++                new Evento
++                {
++                    EntidadeId = entidade1.Id, Nome = "Congresso Nacional de Hotelaria 2026",
++                    Descricao = "O maior evento do setor de hotelaria do Brasil, reunindo executivos e gestores de todo o país.",
++                    DataInicio = new DateTime(2026,9,15), DataFim = new DateTime(2026,9,17),
++                    Local = "Centro de Convenções SP", Cidade = "São Paulo", Estado = "SP",
++                    MaxParticipantes = 400, TotalInscritos = 187, TaxaInscricao = 890m, Status = StatusEvento.Aberto,
++                    Inscricoes = new()
++                    {
++                        new() { NomeParticipante = "Carlos Silva", Email = "carlos@hotelpaulista.com.br", Empresa = "Hotel Paulista S/A", Cargo = "Diretor", DataInscricao = new DateTime(2026,6,1), Pago = true, Presente = false, TipoHospedagem = "Individual" },
++                        new() { NomeParticipante = "Ana Costa", Email = "ana@granvia.com.br", Empresa = "Hotel Gran Via S/A", Cargo = "Gerente", DataInscricao = new DateTime(2026,6,5), Pago = true, Presente = false, TipoHospedagem = "Duplo" },
++                        new() { NomeParticipante = "Paulo Mendes", Email = "paulo@solmar.com.br", Empresa = "Resort Sol & Mar", Cargo = "Sócio", DataInscricao = new DateTime(2026,6,10), Pago = false, Presente = false, TipoHospedagem = "Sem hospedagem" }
++                    }
++                },
++                new Evento
++                {
++                    EntidadeId = entidade1.Id, Nome = "Seminário Gestão Sindical 2026",
++                    Descricao = "Capacitação em gestão para dirigentes e colaboradores de entidades sindicais patronais.",
++                    DataInicio = new DateTime(2026,8,20), DataFim = new DateTime(2026,8,21),
++                    Local = "Hotel Blue Tree Premium", Cidade = "São Paulo", Estado = "SP",
++                    MaxParticipantes = 80, TotalInscritos = 72, TaxaInscricao = 350m, Status = StatusEvento.Fechado,
++                    Inscricoes = new()
++                    {
++                        new() { NomeParticipante = "Maria Santos", Email = "maria@sindhosp.org.br", Empresa = "SINDHOSP", Cargo = "Diretora", DataInscricao = new DateTime(2026,7,1), Pago = true, Presente = false, TipoHospedagem = "Individual" },
++                        new() { NomeParticipante = "João Lima", Email = "joao@sindhosp.org.br", Empresa = "SINDHOSP", Cargo = "Assessor", DataInscricao = new DateTime(2026,7,2), Pago = true, Presente = false, TipoHospedagem = "Sem hospedagem" }
++                    }
++                },
++                new Evento
++                {
++                    EntidadeId = entidade1.Id, Nome = "Assembléia Geral Ordinária 2025",
++                    Descricao = "AGO anual para prestação de contas e eleição de diretoria.",
++                    DataInicio = new DateTime(2025,11,10), DataFim = new DateTime(2025,11,10),
++                    Local = "Sede da Entidade", Cidade = "São Paulo", Estado = "SP",
++                    MaxParticipantes = 200, TotalInscritos = 134, TaxaInscricao = 0m, Status = StatusEvento.Realizado,
++                    Inscricoes = new()
++                    {
++                        new() { NomeParticipante = "Roberto Souza", Email = "roberto@hotelcentral.com.br", Empresa = "Hotel Central Ltda", Cargo = "Sócio", DataInscricao = new DateTime(2025,10,20), Pago = true, Presente = true, TipoHospedagem = "Sem hospedagem" },
++                        new() { NomeParticipante = "Fernanda Oliveira", Email = "fernanda@buffet.com.br", Empresa = "Buffet Bom Sabor S/A", Cargo = "Representante", DataInscricao = new DateTime(2025,10,22), Pago = true, Presente = false, TipoHospedagem = "Sem hospedagem" }
++                    }
++                },
++                new Evento
++                {
++                    EntidadeId = entidade1.Id, Nome = "Workshop Sustentabilidade no Turismo",
++                    Descricao = "Práticas sustentáveis para hotéis, restaurantes e meios de hospedagem.",
++                    DataInicio = new DateTime(2026,10,5), DataFim = new DateTime(2026,10,5),
++                    Local = "WTC São Paulo", Cidade = "São Paulo", Estado = "SP",
++                    MaxParticipantes = 120, TotalInscritos = 45, TaxaInscricao = 220m, Status = StatusEvento.Aberto,
++                    Inscricoes = new()
++                }
++            );
++            db.SaveChanges();
++        }
++
++        if (!db.Configuracoes.Any() && db.Entidades.Any())
++        {
++            foreach (var entidade in db.Entidades.ToList())
++            {
++                db.Configuracoes.Add(new ConfiguracaoEntidade
++                {
++                    EntidadeId = entidade.Id,
++                    Geral = new ConfiguracaoGeral
++                    {
++                        EntidadeId = entidade.Id,
++                        ResponsavelTecnico = "João da Silva",
++                        EmailContato = $"contato@{entidade.Sigla.ToLower()}.org.br",
++                        Telefone = "(11) 3000-0000",
++                        Endereco = "Av. Paulista, 1000 - Bela Vista, São Paulo/SP"
++                    },
++                    Cobranca = new ConfiguracaoCobranca
++                    {
++                        EntidadeId = entidade.Id,
++                        PercentualMulta = 2m,
++                        PercentualJurosDia = 0.033m,
++                        DiasCarencia = 5,
++                        EmissaoAutomatica = true,
++                        DiaVencimento = 30,
++                        Faixas = new List<FaixaCobranca>
++                        {
++                            new() { Id = 1, Descricao = "Microempresa", CapitalSocialMin = 0, CapitalSocialMax = 360000, ValorFixo = 250, PercentualCapital = 0 },
++                            new() { Id = 2, Descricao = "Pequeno Porte", CapitalSocialMin = 360001, CapitalSocialMax = 1000000, ValorFixo = 0, PercentualCapital = 0.1m },
++                            new() { Id = 3, Descricao = "Médio Porte", CapitalSocialMin = 1000001, CapitalSocialMax = 5000000, ValorFixo = 0, PercentualCapital = 0.08m },
++                            new() { Id = 4, Descricao = "Grande Porte", CapitalSocialMin = 5000001, CapitalSocialMax = decimal.MaxValue, ValorFixo = 0, PercentualCapital = 0.06m }
++                        }
++                    },
++                    Email = new ConfiguracaoEmail
++                    {
++                        ServidorSmtp = $"smtp.{entidade.Sigla.ToLower()}.org.br",
++                        Porta = 587,
++                        UsarSsl = true,
++                        EmailRemetente = $"noreply@{entidade.Sigla.ToLower()}.org.br",
++                        NomeRemetente = "SindERP",
++                        Ativo = true
++                    },
++                    Banco = new ConfiguracaoBanco
++                    {
++                        Banco = "001 - Banco do Brasil",
++                        Agencia = "0001-9",
++                        Conta = "00001234-0",
++                        Cedente = entidade.Sigla,
++                        CodigoCedente = "123456",
++                        Carteira = "17"
++                    }
++                });
++            }
++            db.SaveChanges();
++        }
+     }
+ }
+diff --git a/BlazorTeste.Api/Migrations/20260629122603_AddGroupBEntities.Designer.cs b/BlazorTeste.Api/Migrations/20260629122603_AddGroupBEntities.Designer.cs
+new file mode 100644
+index 0000000..be1c6a5
+--- /dev/null
++++ b/BlazorTeste.Api/Migrations/20260629122603_AddGroupBEntities.Designer.cs
+@@ -0,0 +1,1166 @@
++﻿// <auto-generated />
++using System;
++using BlazorTeste.Api.Data;
++using Microsoft.EntityFrameworkCore;
++using Microsoft.EntityFrameworkCore.Infrastructure;
++using Microsoft.EntityFrameworkCore.Metadata;
++using Microsoft.EntityFrameworkCore.Migrations;
++using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
++
++#nullable disable
++
++namespace BlazorTeste.Api.Migrations
++{
++    [DbContext(typeof(AppDbContext))]
++    [Migration("20260629122603_AddGroupBEntities")]
++    partial class AddGroupBEntities
++    {
++        /// <inheritdoc />
++        protected override void BuildTargetModel(ModelBuilder modelBuilder)
++        {
++#pragma warning disable 612, 618
++            modelBuilder
++                .HasAnnotation("ProductVersion", "10.0.9")
++                .HasAnnotation("Relational:MaxIdentifierLength", 128);
++
++            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
++
++            modelBuilder.Entity("BlazorTeste.Models.Advogado", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Email")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Nome")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Oab")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("ProcessosAtivos")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Telefone")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Advogados");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Audiencia", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<int>("AdvogadoId")
++                        .HasColumnType("int");
++
++                    b.Property<DateTime>("DataHora")
++                        .HasColumnType("datetime2");
++
++                    b.Property<string>("Local")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("NomeAdvogado")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("NumeroProcesso")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("ProcessoId")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Situacao")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Tipo")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Audiencias");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Campanha", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Assunto")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Criador")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<DateTime?>("DataEnvio")
++                        .HasColumnType("datetime2");
++
++                    b.Property<string>("Destinatarios")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<int>("Status")
++                        .HasColumnType("int");
++
++                    b.Property<int>("TotalDestinatarios")
++                        .HasColumnType("int");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Campanhas");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Cobranca", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<int>("AnoReferencia")
++                        .HasColumnType("int");
++
++                    b.Property<int>("ContribuinteId")
++                        .HasColumnType("int");
++
++                    b.Property<DateTime?>("DataPagamento")
++                        .HasColumnType("datetime2");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<decimal>("Juros")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<string>("LinhaDigitavel")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<decimal>("Multa")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<string>("RazaoSocialContribuinte")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("Status")
++                        .HasColumnType("int");
++
++                    b.Property<int>("Tipo")
++                        .HasColumnType("int");
++
++                    b.Property<decimal>("Valor")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<DateTime>("Vencimento")
++                        .HasColumnType("datetime2");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Cobrancas");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.ConfiguracaoEntidade", b =>
++                {
++                    b.Property<int>("EntidadeId")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EntidadeId"));
++
++                    b.HasKey("EntidadeId");
++
++                    b.ToTable("Configuracoes");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Contribuinte", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<decimal>("CapitalSocial")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<string>("Cnae")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Cnpj")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<DateTime>("DataAbertura")
++                        .HasColumnType("datetime2");
++
++                    b.Property<DateTime>("DataCadastro")
++                        .HasColumnType("datetime2");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<int>("NumeroFuncionarios")
++                        .HasColumnType("int");
++
++                    b.Property<string>("RazaoSocial")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("RegimeTributario")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Situacao")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Contribuintes");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Entidade", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("CidadeSede")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Cidades")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Cnaes")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Cnpj")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Nome")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Sigla")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("TotalContribuintes")
++                        .HasColumnType("int");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Entidades");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Evento", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Cidade")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<DateTime>("DataFim")
++                        .HasColumnType("datetime2");
++
++                    b.Property<DateTime>("DataInicio")
++                        .HasColumnType("datetime2");
++
++                    b.Property<string>("Descricao")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Estado")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Local")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("MaxParticipantes")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Nome")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("Status")
++                        .HasColumnType("int");
++
++                    b.Property<decimal>("TaxaInscricao")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<int>("TotalInscritos")
++                        .HasColumnType("int");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Eventos");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Fornecedor", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Categoria")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Cnpj")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Email")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Nome")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Telefone")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Fornecedores");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.GuiaSindical", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<int>("AnoReferencia")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Cnpj")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("ContribuinteId")
++                        .HasColumnType("int");
++
++                    b.Property<DateTime>("DataEmissao")
++                        .HasColumnType("datetime2");
++
++                    b.Property<DateTime?>("DataPagamento")
++                        .HasColumnType("datetime2");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<decimal>("Juros")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<string>("LinhaDigitavel")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<decimal>("Multa")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<string>("NumeroDocumento")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("RazaoSocialContribuinte")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("Status")
++                        .HasColumnType("int");
++
++                    b.Property<decimal>("ValorBase")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<DateTime>("Vencimento")
++                        .HasColumnType("datetime2");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("GuiaSindicais");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.LancamentoFinanceiro", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Categoria")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("ContaBancaria")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<DateTime>("Data")
++                        .HasColumnType("datetime2");
++
++                    b.Property<string>("Descricao")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<int?>("FornecedorId")
++                        .HasColumnType("int");
++
++                    b.Property<string>("NomeFornecedor")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<bool>("Realizado")
++                        .HasColumnType("bit");
++
++                    b.Property<int>("Tipo")
++                        .HasColumnType("int");
++
++                    b.Property<decimal>("Valor")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("LancamentosFinanceiros");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Negociacao", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<int>("ContribuinteId")
++                        .HasColumnType("int");
++
++                    b.Property<DateTime>("DataAbertura")
++                        .HasColumnType("datetime2");
++
++                    b.Property<DateTime?>("DataConclusao")
++                        .HasColumnType("datetime2");
++
++                    b.Property<decimal>("DebitoOriginal")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<decimal>("Desconto")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<int>("NumeroParcelas")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Observacoes")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("RazaoSocialContribuinte")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("Status")
++                        .HasColumnType("int");
++
++                    b.Property<decimal>("ValorNegociado")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Negociacoes");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Processo", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<int>("AdvogadoId")
++                        .HasColumnType("int");
++
++                    b.Property<DateTime>("DataAbertura")
++                        .HasColumnType("datetime2");
++
++                    b.Property<string>("Descricao")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<string>("NomeAdvogado")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Numero")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Situacao")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Tipo")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Tribunal")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Vara")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Processos");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.RegistroBaixa", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<int>("CobrancaId")
++                        .HasColumnType("int");
++
++                    b.Property<DateTime>("DataPagamento")
++                        .HasColumnType("datetime2");
++
++                    b.Property<DateTime>("DataProcessamento")
++                        .HasColumnType("datetime2");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Observacoes")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("OperadorResponsavel")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("RazaoSocialContribuinte")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("TipoBaixa")
++                        .HasColumnType("int");
++
++                    b.Property<string>("TipoCobranca")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<decimal>("ValorOriginal")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<decimal>("ValorPago")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("RegistrosBaixa");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Relatorio", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<int>("Categoria")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Descricao")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("Formato")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Icone")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Nome")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Relatorios");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Usuario", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Email")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Nome")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Permissoes")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("RefreshToken")
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<DateTime?>("RefreshTokenExpiry")
++                        .HasColumnType("datetime2");
++
++                    b.Property<string>("SenhaHash")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<DateTime>("UltimoAcesso")
++                        .HasColumnType("datetime2");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Usuarios");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.ConfiguracaoEntidade", b =>
++                {
++                    b.OwnsOne("BlazorTeste.Models.ConfiguracaoBanco", "Banco", b1 =>
++                        {
++                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.Property<string>("Agencia")
++                                .IsRequired();
++
++                            b1.Property<string>("Banco")
++                                .IsRequired();
++
++                            b1.Property<string>("Carteira")
++                                .IsRequired();
++
++                            b1.Property<string>("Cedente")
++                                .IsRequired();
++
++                            b1.Property<string>("CodigoCedente")
++                                .IsRequired();
++
++                            b1.Property<string>("Conta")
++                                .IsRequired();
++
++                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.ToTable("Configuracoes");
++
++                            b1
++                                .ToJson("Banco")
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.WithOwner()
++                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
++                        });
++
++                    b.OwnsOne("BlazorTeste.Models.ConfiguracaoCobranca", "Cobranca", b1 =>
++                        {
++                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.Property<int>("DiaVencimento");
++
++                            b1.Property<int>("DiasCarencia");
++
++                            b1.Property<bool>("EmissaoAutomatica");
++
++                            b1.Property<int>("EntidadeId");
++
++                            b1.Property<decimal>("PercentualJurosDia");
++
++                            b1.Property<decimal>("PercentualMulta");
++
++                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.ToTable("Configuracoes");
++
++                            b1
++                                .ToJson("Cobranca")
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.WithOwner()
++                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.OwnsMany("BlazorTeste.Models.FaixaCobranca", "Faixas", b2 =>
++                                {
++                                    b2.Property<int>("ConfiguracaoCobrancaConfiguracaoEntidadeEntidadeId");
++
++                                    b2.Property<int>("__synthesizedOrdinal")
++                                        .ValueGeneratedOnAddOrUpdate();
++
++                                    b2.Property<decimal>("CapitalSocialMax");
++
++                                    b2.Property<decimal>("CapitalSocialMin");
++
++                                    b2.Property<string>("Descricao")
++                                        .IsRequired();
++
++                                    b2.Property<int>("Id");
++
++                                    b2.Property<decimal>("PercentualCapital");
++
++                                    b2.Property<decimal>("ValorFixo");
++
++                                    b2.HasKey("ConfiguracaoCobrancaConfiguracaoEntidadeEntidadeId", "__synthesizedOrdinal");
++
++                                    b2.ToTable("Configuracoes");
++
++                                    b2.WithOwner()
++                                        .HasForeignKey("ConfiguracaoCobrancaConfiguracaoEntidadeEntidadeId");
++                                });
++
++                            b1.Navigation("Faixas");
++                        });
++
++                    b.OwnsOne("BlazorTeste.Models.ConfiguracaoEmail", "Email", b1 =>
++                        {
++                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.Property<bool>("Ativo");
++
++                            b1.Property<string>("EmailRemetente")
++                                .IsRequired();
++
++                            b1.Property<string>("NomeRemetente")
++                                .IsRequired();
++
++                            b1.Property<int>("Porta");
++
++                            b1.Property<string>("ServidorSmtp")
++                                .IsRequired();
++
++                            b1.Property<bool>("UsarSsl");
++
++                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.ToTable("Configuracoes");
++
++                            b1
++                                .ToJson("Email")
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.WithOwner()
++                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
++                        });
++
++                    b.OwnsOne("BlazorTeste.Models.ConfiguracaoGeral", "Geral", b1 =>
++                        {
++                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.Property<string>("EmailContato")
++                                .IsRequired();
++
++                            b1.Property<string>("Endereco")
++                                .IsRequired();
++
++                            b1.Property<int>("EntidadeId");
++
++                            b1.Property<string>("ResponsavelTecnico")
++                                .IsRequired();
++
++                            b1.Property<string>("Telefone")
++                                .IsRequired();
++
++                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.ToTable("Configuracoes");
++
++                            b1
++                                .ToJson("Geral")
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.WithOwner()
++                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
++                        });
++
++                    b.Navigation("Banco")
++                        .IsRequired();
++
++                    b.Navigation("Cobranca")
++                        .IsRequired();
++
++                    b.Navigation("Email")
++                        .IsRequired();
++
++                    b.Navigation("Geral")
++                        .IsRequired();
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Contribuinte", b =>
++                {
++                    b.OwnsMany("BlazorTeste.Models.Contato", "Contatos", b1 =>
++                        {
++                            b1.Property<int>("ContribuinteId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<string>("Descricao")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Tipo")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Valor")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.HasKey("ContribuinteId", "Id");
++
++                            b1.ToTable("Contatos", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("ContribuinteId");
++                        });
++
++                    b.OwnsMany("BlazorTeste.Models.Endereco", "Enderecos", b1 =>
++                        {
++                            b1.Property<int>("ContribuinteId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<string>("Bairro")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Cep")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Cidade")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Complemento")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Estado")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Logradouro")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Numero")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Tipo")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.HasKey("ContribuinteId", "Id");
++
++                            b1.ToTable("Enderecos", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("ContribuinteId");
++                        });
++
++                    b.OwnsMany("BlazorTeste.Models.HistoricoMensal", "Historico", b1 =>
++                        {
++                            b1.Property<int>("ContribuinteId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<int>("Ano")
++                                .HasColumnType("int");
++
++                            b1.Property<decimal>("CapitalSocial")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.Property<int>("Mes")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("NumeroFuncionarios")
++                                .HasColumnType("int");
++
++                            b1.HasKey("ContribuinteId", "Id");
++
++                            b1.ToTable("HistoricoMensais", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("ContribuinteId");
++                        });
++
++                    b.OwnsMany("BlazorTeste.Models.Socio", "Socios", b1 =>
++                        {
++                            b1.Property<int>("ContribuinteId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<DateTime?>("DataFim")
++                                .HasColumnType("datetime2");
++
++                            b1.Property<DateTime>("DataInicio")
++                                .HasColumnType("datetime2");
++
++                            b1.Property<string>("Matricula")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<decimal>("ValorMensalidade")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.HasKey("ContribuinteId", "Id");
++
++                            b1.ToTable("Socios", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("ContribuinteId");
++                        });
++
++                    b.Navigation("Contatos");
++
++                    b.Navigation("Enderecos");
++
++                    b.Navigation("Historico");
++
++                    b.Navigation("Socios");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Evento", b =>
++                {
++                    b.OwnsMany("BlazorTeste.Models.InscricaoEvento", "Inscricoes", b1 =>
++                        {
++                            b1.Property<int>("EventoId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<string>("Cargo")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<DateTime>("DataInscricao")
++                                .HasColumnType("datetime2");
++
++                            b1.Property<string>("Email")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Empresa")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("NomeParticipante")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<bool>("Pago")
++                                .HasColumnType("bit");
++
++                            b1.Property<bool>("Presente")
++                                .HasColumnType("bit");
++
++                            b1.Property<string>("TipoHospedagem")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.HasKey("EventoId", "Id");
++
++                            b1.ToTable("EventoInscricoes", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("EventoId");
++                        });
++
++                    b.Navigation("Inscricoes");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Negociacao", b =>
++                {
++                    b.OwnsMany("BlazorTeste.Models.CobrancaOriginalNeg", "CobrancasOriginais", b1 =>
++                        {
++                            b1.Property<int>("NegociacaoId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<int>("AnoReferencia")
++                                .HasColumnType("int");
++
++                            b1.Property<decimal>("Juros")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.Property<decimal>("Multa")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.Property<string>("Tipo")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<decimal>("ValorOriginal")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.HasKey("NegociacaoId", "Id");
++
++                            b1.ToTable("NegociacaoCobrancasOriginais", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("NegociacaoId");
++                        });
++
++                    b.OwnsMany("BlazorTeste.Models.ParcelaNegociacao", "Parcelas", b1 =>
++                        {
++                            b1.Property<int>("NegociacaoId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<DateTime?>("DataPagamento")
++                                .HasColumnType("datetime2");
++
++                            b1.Property<string>("LinhaDigitavel")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<int>("Numero")
++                                .HasColumnType("int");
++
++                            b1.Property<bool>("Pago")
++                                .HasColumnType("bit");
++
++                            b1.Property<decimal>("Valor")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.Property<DateTime>("Vencimento")
++                                .HasColumnType("datetime2");
++
++                            b1.HasKey("NegociacaoId", "Id");
++
++                            b1.ToTable("NegociacaoParcelas", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("NegociacaoId");
++                        });
++
++                    b.Navigation("CobrancasOriginais");
++
++                    b.Navigation("Parcelas");
++                });
++#pragma warning restore 612, 618
++        }
++    }
++}
+diff --git a/BlazorTeste.Api/Migrations/20260629122603_AddGroupBEntities.cs b/BlazorTeste.Api/Migrations/20260629122603_AddGroupBEntities.cs
+new file mode 100644
+index 0000000..8a157f3
+--- /dev/null
++++ b/BlazorTeste.Api/Migrations/20260629122603_AddGroupBEntities.cs
+@@ -0,0 +1,176 @@
++﻿using System;
++using Microsoft.EntityFrameworkCore.Migrations;
++
++#nullable disable
++
++namespace BlazorTeste.Api.Migrations
++{
++    /// <inheritdoc />
++    public partial class AddGroupBEntities : Migration
++    {
++        /// <inheritdoc />
++        protected override void Up(MigrationBuilder migrationBuilder)
++        {
++            migrationBuilder.CreateTable(
++                name: "Configuracoes",
++                columns: table => new
++                {
++                    EntidadeId = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    Banco = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    Cobranca = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    Geral = table.Column<string>(type: "nvarchar(max)", nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_Configuracoes", x => x.EntidadeId);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "Eventos",
++                columns: table => new
++                {
++                    Id = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    EntidadeId = table.Column<int>(type: "int", nullable: false),
++                    Nome = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    Descricao = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    DataInicio = table.Column<DateTime>(type: "datetime2", nullable: false),
++                    DataFim = table.Column<DateTime>(type: "datetime2", nullable: false),
++                    Local = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    Cidade = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    Estado = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    MaxParticipantes = table.Column<int>(type: "int", nullable: false),
++                    TotalInscritos = table.Column<int>(type: "int", nullable: false),
++                    TaxaInscricao = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
++                    Status = table.Column<int>(type: "int", nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_Eventos", x => x.Id);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "Negociacoes",
++                columns: table => new
++                {
++                    Id = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    EntidadeId = table.Column<int>(type: "int", nullable: false),
++                    ContribuinteId = table.Column<int>(type: "int", nullable: false),
++                    RazaoSocialContribuinte = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    DataAbertura = table.Column<DateTime>(type: "datetime2", nullable: false),
++                    DataConclusao = table.Column<DateTime>(type: "datetime2", nullable: true),
++                    DebitoOriginal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
++                    ValorNegociado = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
++                    Desconto = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
++                    NumeroParcelas = table.Column<int>(type: "int", nullable: false),
++                    Status = table.Column<int>(type: "int", nullable: false),
++                    Observacoes = table.Column<string>(type: "nvarchar(max)", nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_Negociacoes", x => x.Id);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "EventoInscricoes",
++                columns: table => new
++                {
++                    Id = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    EventoId = table.Column<int>(type: "int", nullable: false),
++                    NomeParticipante = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    Empresa = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    Cargo = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    DataInscricao = table.Column<DateTime>(type: "datetime2", nullable: false),
++                    Pago = table.Column<bool>(type: "bit", nullable: false),
++                    Presente = table.Column<bool>(type: "bit", nullable: false),
++                    TipoHospedagem = table.Column<string>(type: "nvarchar(max)", nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_EventoInscricoes", x => new { x.EventoId, x.Id });
++                    table.ForeignKey(
++                        name: "FK_EventoInscricoes_Eventos_EventoId",
++                        column: x => x.EventoId,
++                        principalTable: "Eventos",
++                        principalColumn: "Id",
++                        onDelete: ReferentialAction.Cascade);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "NegociacaoCobrancasOriginais",
++                columns: table => new
++                {
++                    Id = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    NegociacaoId = table.Column<int>(type: "int", nullable: false),
++                    Tipo = table.Column<string>(type: "nvarchar(max)", nullable: false),
++                    AnoReferencia = table.Column<int>(type: "int", nullable: false),
++                    ValorOriginal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
++                    Multa = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
++                    Juros = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_NegociacaoCobrancasOriginais", x => new { x.NegociacaoId, x.Id });
++                    table.ForeignKey(
++                        name: "FK_NegociacaoCobrancasOriginais_Negociacoes_NegociacaoId",
++                        column: x => x.NegociacaoId,
++                        principalTable: "Negociacoes",
++                        principalColumn: "Id",
++                        onDelete: ReferentialAction.Cascade);
++                });
++
++            migrationBuilder.CreateTable(
++                name: "NegociacaoParcelas",
++                columns: table => new
++                {
++                    Id = table.Column<int>(type: "int", nullable: false)
++                        .Annotation("SqlServer:Identity", "1, 1"),
++                    NegociacaoId = table.Column<int>(type: "int", nullable: false),
++                    Numero = table.Column<int>(type: "int", nullable: false),
++                    Valor = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
++                    Vencimento = table.Column<DateTime>(type: "datetime2", nullable: false),
++                    DataPagamento = table.Column<DateTime>(type: "datetime2", nullable: true),
++                    Pago = table.Column<bool>(type: "bit", nullable: false),
++                    LinhaDigitavel = table.Column<string>(type: "nvarchar(max)", nullable: false)
++                },
++                constraints: table =>
++                {
++                    table.PrimaryKey("PK_NegociacaoParcelas", x => new { x.NegociacaoId, x.Id });
++                    table.ForeignKey(
++                        name: "FK_NegociacaoParcelas_Negociacoes_NegociacaoId",
++                        column: x => x.NegociacaoId,
++                        principalTable: "Negociacoes",
++                        principalColumn: "Id",
++                        onDelete: ReferentialAction.Cascade);
++                });
++        }
++
++        /// <inheritdoc />
++        protected override void Down(MigrationBuilder migrationBuilder)
++        {
++            migrationBuilder.DropTable(
++                name: "Configuracoes");
++
++            migrationBuilder.DropTable(
++                name: "EventoInscricoes");
++
++            migrationBuilder.DropTable(
++                name: "NegociacaoCobrancasOriginais");
++
++            migrationBuilder.DropTable(
++                name: "NegociacaoParcelas");
++
++            migrationBuilder.DropTable(
++                name: "Eventos");
++
++            migrationBuilder.DropTable(
++                name: "Negociacoes");
++        }
++    }
++}
+diff --git a/BlazorTeste.Api/Migrations/AppDbContextModelSnapshot.cs b/BlazorTeste.Api/Migrations/AppDbContextModelSnapshot.cs
+index c2e5098..b1a221f 100644
+--- a/BlazorTeste.Api/Migrations/AppDbContextModelSnapshot.cs
++++ b/BlazorTeste.Api/Migrations/AppDbContextModelSnapshot.cs
+@@ -180,20 +180,33 @@ namespace BlazorTeste.Api.Migrations
+                         .HasColumnType("decimal(18,2)");
+ 
+                     b.Property<DateTime>("Vencimento")
+                         .HasColumnType("datetime2");
+ 
+                     b.HasKey("Id");
+ 
+                     b.ToTable("Cobrancas");
+                 });
+ 
++            modelBuilder.Entity("BlazorTeste.Models.ConfiguracaoEntidade", b =>
++                {
++                    b.Property<int>("EntidadeId")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EntidadeId"));
++
++                    b.HasKey("EntidadeId");
++
++                    b.ToTable("Configuracoes");
++                });
++
+             modelBuilder.Entity("BlazorTeste.Models.Contribuinte", b =>
+                 {
+                     b.Property<int>("Id")
+                         .ValueGeneratedOnAdd()
+                         .HasColumnType("int");
+ 
+                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+ 
+                     b.Property<decimal>("CapitalSocial")
+                         .HasColumnType("decimal(18,2)");
+@@ -268,20 +281,74 @@ namespace BlazorTeste.Api.Migrations
+                         .HasColumnType("nvarchar(max)");
+ 
+                     b.Property<int>("TotalContribuintes")
+                         .HasColumnType("int");
+ 
+                     b.HasKey("Id");
+ 
+                     b.ToTable("Entidades");
+                 });
+ 
++            modelBuilder.Entity("BlazorTeste.Models.Evento", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<string>("Cidade")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<DateTime>("DataFim")
++                        .HasColumnType("datetime2");
++
++                    b.Property<DateTime>("DataInicio")
++                        .HasColumnType("datetime2");
++
++                    b.Property<string>("Descricao")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Estado")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("Local")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("MaxParticipantes")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Nome")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("Status")
++                        .HasColumnType("int");
++
++                    b.Property<decimal>("TaxaInscricao")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<int>("TotalInscritos")
++                        .HasColumnType("int");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Eventos");
++                });
++
+             modelBuilder.Entity("BlazorTeste.Models.Fornecedor", b =>
+                 {
+                     b.Property<int>("Id")
+                         .ValueGeneratedOnAdd()
+                         .HasColumnType("int");
+ 
+                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+ 
+                     b.Property<string>("Categoria")
+                         .IsRequired()
+@@ -410,20 +477,68 @@ namespace BlazorTeste.Api.Migrations
+                         .HasColumnType("int");
+ 
+                     b.Property<decimal>("Valor")
+                         .HasColumnType("decimal(18,2)");
+ 
+                     b.HasKey("Id");
+ 
+                     b.ToTable("LancamentosFinanceiros");
+                 });
+ 
++            modelBuilder.Entity("BlazorTeste.Models.Negociacao", b =>
++                {
++                    b.Property<int>("Id")
++                        .ValueGeneratedOnAdd()
++                        .HasColumnType("int");
++
++                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
++
++                    b.Property<int>("ContribuinteId")
++                        .HasColumnType("int");
++
++                    b.Property<DateTime>("DataAbertura")
++                        .HasColumnType("datetime2");
++
++                    b.Property<DateTime?>("DataConclusao")
++                        .HasColumnType("datetime2");
++
++                    b.Property<decimal>("DebitoOriginal")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<decimal>("Desconto")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.Property<int>("EntidadeId")
++                        .HasColumnType("int");
++
++                    b.Property<int>("NumeroParcelas")
++                        .HasColumnType("int");
++
++                    b.Property<string>("Observacoes")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<string>("RazaoSocialContribuinte")
++                        .IsRequired()
++                        .HasColumnType("nvarchar(max)");
++
++                    b.Property<int>("Status")
++                        .HasColumnType("int");
++
++                    b.Property<decimal>("ValorNegociado")
++                        .HasColumnType("decimal(18,2)");
++
++                    b.HasKey("Id");
++
++                    b.ToTable("Negociacoes");
++                });
++
+             modelBuilder.Entity("BlazorTeste.Models.Processo", b =>
+                 {
+                     b.Property<int>("Id")
+                         .ValueGeneratedOnAdd()
+                         .HasColumnType("int");
+ 
+                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+ 
+                     b.Property<int>("AdvogadoId")
+                         .HasColumnType("int");
+@@ -579,20 +694,188 @@ namespace BlazorTeste.Api.Migrations
+                         .HasColumnType("nvarchar(max)");
+ 
+                     b.Property<DateTime>("UltimoAcesso")
+                         .HasColumnType("datetime2");
+ 
+                     b.HasKey("Id");
+ 
+                     b.ToTable("Usuarios");
+                 });
+ 
++            modelBuilder.Entity("BlazorTeste.Models.ConfiguracaoEntidade", b =>
++                {
++                    b.OwnsOne("BlazorTeste.Models.ConfiguracaoBanco", "Banco", b1 =>
++                        {
++                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.Property<string>("Agencia")
++                                .IsRequired();
++
++                            b1.Property<string>("Banco")
++                                .IsRequired();
++
++                            b1.Property<string>("Carteira")
++                                .IsRequired();
++
++                            b1.Property<string>("Cedente")
++                                .IsRequired();
++
++                            b1.Property<string>("CodigoCedente")
++                                .IsRequired();
++
++                            b1.Property<string>("Conta")
++                                .IsRequired();
++
++                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.ToTable("Configuracoes");
++
++                            b1
++                                .ToJson("Banco")
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.WithOwner()
++                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
++                        });
++
++                    b.OwnsOne("BlazorTeste.Models.ConfiguracaoCobranca", "Cobranca", b1 =>
++                        {
++                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.Property<int>("DiaVencimento");
++
++                            b1.Property<int>("DiasCarencia");
++
++                            b1.Property<bool>("EmissaoAutomatica");
++
++                            b1.Property<int>("EntidadeId");
++
++                            b1.Property<decimal>("PercentualJurosDia");
++
++                            b1.Property<decimal>("PercentualMulta");
++
++                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.ToTable("Configuracoes");
++
++                            b1
++                                .ToJson("Cobranca")
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.WithOwner()
++                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.OwnsMany("BlazorTeste.Models.FaixaCobranca", "Faixas", b2 =>
++                                {
++                                    b2.Property<int>("ConfiguracaoCobrancaConfiguracaoEntidadeEntidadeId");
++
++                                    b2.Property<int>("__synthesizedOrdinal")
++                                        .ValueGeneratedOnAddOrUpdate();
++
++                                    b2.Property<decimal>("CapitalSocialMax");
++
++                                    b2.Property<decimal>("CapitalSocialMin");
++
++                                    b2.Property<string>("Descricao")
++                                        .IsRequired();
++
++                                    b2.Property<int>("Id");
++
++                                    b2.Property<decimal>("PercentualCapital");
++
++                                    b2.Property<decimal>("ValorFixo");
++
++                                    b2.HasKey("ConfiguracaoCobrancaConfiguracaoEntidadeEntidadeId", "__synthesizedOrdinal");
++
++                                    b2.ToTable("Configuracoes");
++
++                                    b2.WithOwner()
++                                        .HasForeignKey("ConfiguracaoCobrancaConfiguracaoEntidadeEntidadeId");
++                                });
++
++                            b1.Navigation("Faixas");
++                        });
++
++                    b.OwnsOne("BlazorTeste.Models.ConfiguracaoEmail", "Email", b1 =>
++                        {
++                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.Property<bool>("Ativo");
++
++                            b1.Property<string>("EmailRemetente")
++                                .IsRequired();
++
++                            b1.Property<string>("NomeRemetente")
++                                .IsRequired();
++
++                            b1.Property<int>("Porta");
++
++                            b1.Property<string>("ServidorSmtp")
++                                .IsRequired();
++
++                            b1.Property<bool>("UsarSsl");
++
++                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.ToTable("Configuracoes");
++
++                            b1
++                                .ToJson("Email")
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.WithOwner()
++                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
++                        });
++
++                    b.OwnsOne("BlazorTeste.Models.ConfiguracaoGeral", "Geral", b1 =>
++                        {
++                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.Property<string>("EmailContato")
++                                .IsRequired();
++
++                            b1.Property<string>("Endereco")
++                                .IsRequired();
++
++                            b1.Property<int>("EntidadeId");
++
++                            b1.Property<string>("ResponsavelTecnico")
++                                .IsRequired();
++
++                            b1.Property<string>("Telefone")
++                                .IsRequired();
++
++                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
++
++                            b1.ToTable("Configuracoes");
++
++                            b1
++                                .ToJson("Geral")
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.WithOwner()
++                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
++                        });
++
++                    b.Navigation("Banco")
++                        .IsRequired();
++
++                    b.Navigation("Cobranca")
++                        .IsRequired();
++
++                    b.Navigation("Email")
++                        .IsRequired();
++
++                    b.Navigation("Geral")
++                        .IsRequired();
++                });
++
+             modelBuilder.Entity("BlazorTeste.Models.Contribuinte", b =>
+                 {
+                     b.OwnsMany("BlazorTeste.Models.Contato", "Contatos", b1 =>
+                         {
+                             b1.Property<int>("ContribuinteId")
+                                 .HasColumnType("int");
+ 
+                             b1.Property<int>("Id")
+                                 .ValueGeneratedOnAdd()
+                                 .HasColumnType("int");
+@@ -734,14 +1017,147 @@ namespace BlazorTeste.Api.Migrations
+                         });
+ 
+                     b.Navigation("Contatos");
+ 
+                     b.Navigation("Enderecos");
+ 
+                     b.Navigation("Historico");
+ 
+                     b.Navigation("Socios");
+                 });
++
++            modelBuilder.Entity("BlazorTeste.Models.Evento", b =>
++                {
++                    b.OwnsMany("BlazorTeste.Models.InscricaoEvento", "Inscricoes", b1 =>
++                        {
++                            b1.Property<int>("EventoId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<string>("Cargo")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<DateTime>("DataInscricao")
++                                .HasColumnType("datetime2");
++
++                            b1.Property<string>("Email")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("Empresa")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<string>("NomeParticipante")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<bool>("Pago")
++                                .HasColumnType("bit");
++
++                            b1.Property<bool>("Presente")
++                                .HasColumnType("bit");
++
++                            b1.Property<string>("TipoHospedagem")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.HasKey("EventoId", "Id");
++
++                            b1.ToTable("EventoInscricoes", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("EventoId");
++                        });
++
++                    b.Navigation("Inscricoes");
++                });
++
++            modelBuilder.Entity("BlazorTeste.Models.Negociacao", b =>
++                {
++                    b.OwnsMany("BlazorTeste.Models.CobrancaOriginalNeg", "CobrancasOriginais", b1 =>
++                        {
++                            b1.Property<int>("NegociacaoId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<int>("AnoReferencia")
++                                .HasColumnType("int");
++
++                            b1.Property<decimal>("Juros")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.Property<decimal>("Multa")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.Property<string>("Tipo")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<decimal>("ValorOriginal")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.HasKey("NegociacaoId", "Id");
++
++                            b1.ToTable("NegociacaoCobrancasOriginais", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("NegociacaoId");
++                        });
++
++                    b.OwnsMany("BlazorTeste.Models.ParcelaNegociacao", "Parcelas", b1 =>
++                        {
++                            b1.Property<int>("NegociacaoId")
++                                .HasColumnType("int");
++
++                            b1.Property<int>("Id")
++                                .ValueGeneratedOnAdd()
++                                .HasColumnType("int");
++
++                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
++
++                            b1.Property<DateTime?>("DataPagamento")
++                                .HasColumnType("datetime2");
++
++                            b1.Property<string>("LinhaDigitavel")
++                                .IsRequired()
++                                .HasColumnType("nvarchar(max)");
++
++                            b1.Property<int>("Numero")
++                                .HasColumnType("int");
++
++                            b1.Property<bool>("Pago")
++                                .HasColumnType("bit");
++
++                            b1.Property<decimal>("Valor")
++                                .HasColumnType("decimal(18,2)");
++
++                            b1.Property<DateTime>("Vencimento")
++                                .HasColumnType("datetime2");
++
++                            b1.HasKey("NegociacaoId", "Id");
++
++                            b1.ToTable("NegociacaoParcelas", (string)null);
++
++                            b1.WithOwner()
++                                .HasForeignKey("NegociacaoId");
++                        });
++
++                    b.Navigation("CobrancasOriginais");
++
++                    b.Navigation("Parcelas");
++                });
+ #pragma warning restore 612, 618
+         }
+     }
+ }
+diff --git a/BlazorTeste.Shared/Models/Configuracao.cs b/BlazorTeste.Shared/Models/Configuracao.cs
+new file mode 100644
+index 0000000..20f0d82
+--- /dev/null
++++ b/BlazorTeste.Shared/Models/Configuracao.cs
+@@ -0,0 +1,60 @@
++namespace BlazorTeste.Models;
++
++public class ConfiguracaoGeral
++{
++    public int EntidadeId { get; set; }
++    public string ResponsavelTecnico { get; set; } = "";
++    public string EmailContato { get; set; } = "";
++    public string Telefone { get; set; } = "";
++    public string Endereco { get; set; } = "";
++}
++
++public class ConfiguracaoCobranca
++{
++    public int EntidadeId { get; set; }
++    public decimal PercentualMulta { get; set; } = 2m;
++    public decimal PercentualJurosDia { get; set; } = 0.033m;
++    public int DiasCarencia { get; set; } = 5;
++    public bool EmissaoAutomatica { get; set; }
++    public int DiaVencimento { get; set; } = 30;
++    public List<FaixaCobranca> Faixas { get; set; } = new();
++}
++
++public class FaixaCobranca
++{
++    public int Id { get; set; }
++    public string Descricao { get; set; } = "";
++    public decimal CapitalSocialMin { get; set; }
++    public decimal CapitalSocialMax { get; set; }
++    public decimal ValorFixo { get; set; }
++    public decimal PercentualCapital { get; set; }
++}
++
++public class ConfiguracaoEmail
++{
++    public string ServidorSmtp { get; set; } = "";
++    public int Porta { get; set; } = 587;
++    public bool UsarSsl { get; set; } = true;
++    public string EmailRemetente { get; set; } = "";
++    public string NomeRemetente { get; set; } = "";
++    public bool Ativo { get; set; }
++}
++
++public class ConfiguracaoBanco
++{
++    public string Banco { get; set; } = "";
++    public string Agencia { get; set; } = "";
++    public string Conta { get; set; } = "";
++    public string Cedente { get; set; } = "";
++    public string CodigoCedente { get; set; } = "";
++    public string Carteira { get; set; } = "";
++}
++
++public class ConfiguracaoEntidade
++{
++    public int EntidadeId { get; set; }
++    public ConfiguracaoGeral Geral { get; set; } = new();
++    public ConfiguracaoCobranca Cobranca { get; set; } = new();
++    public ConfiguracaoEmail Email { get; set; } = new();
++    public ConfiguracaoBanco Banco { get; set; } = new();
++}
+diff --git a/BlazorTeste.Shared/Models/Negociacao.cs b/BlazorTeste.Shared/Models/Negociacao.cs
+new file mode 100644
+index 0000000..130dcb2
+--- /dev/null
++++ b/BlazorTeste.Shared/Models/Negociacao.cs
+@@ -0,0 +1,42 @@
++namespace BlazorTeste.Models;
++
++public enum StatusNegociacao { EmAndamento, Concluida, Cancelada, Inadimplente }
++
++public class Negociacao
++{
++    public int Id { get; set; }
++    public int EntidadeId { get; set; }
++    public int ContribuinteId { get; set; }
++    public string RazaoSocialContribuinte { get; set; } = "";
++    public DateTime DataAbertura { get; set; }
++    public DateTime? DataConclusao { get; set; }
++    public decimal DebitoOriginal { get; set; }
++    public decimal ValorNegociado { get; set; }
++    public decimal Desconto { get; set; }
++    public int NumeroParcelas { get; set; }
++    public StatusNegociacao Status { get; set; }
++    public string Observacoes { get; set; } = "";
++    public List<ParcelaNegociacao> Parcelas { get; set; } = new();
++    public List<CobrancaOriginalNeg> CobrancasOriginais { get; set; } = new();
++}
++
++public class ParcelaNegociacao
++{
++    public int Id { get; set; }
++    public int Numero { get; set; }
++    public decimal Valor { get; set; }
++    public DateTime Vencimento { get; set; }
++    public DateTime? DataPagamento { get; set; }
++    public bool Pago { get; set; }
++    public string LinhaDigitavel { get; set; } = "";
++}
++
++public class CobrancaOriginalNeg
++{
++    public int Id { get; set; }
++    public string Tipo { get; set; } = "";
++    public int AnoReferencia { get; set; }
++    public decimal ValorOriginal { get; set; }
++    public decimal Multa { get; set; }
++    public decimal Juros { get; set; }
++}
