@@ -1,9 +1,8 @@
-using BlazorTeste.Api.Auth;
 using BlazorTeste.Domain.Entities;
 using BlazorTeste.Domain.Enums;
-using BlazorTeste.Infrastructure.Data;
+using BlazorTeste.Infrastructure.Security;
 
-namespace BlazorTeste.Api.Data;
+namespace BlazorTeste.Infrastructure.Data;
 
 public static class SeedData
 {
@@ -89,7 +88,7 @@ public static class SeedData
             db.Contribuintes.AddRange(contribuintes);
             db.SaveChanges();
 
-            // Stage 4: Cobrancas + Lancamentos + Processos (use saved IDs)
+            // Stage 4: Cobrancas + Lancamentos + Processos
             var tipos = Enum.GetValues<TipoCobranca>();
             var cobrancas = new List<Cobranca>();
             for (int i = 0; i < 80; i++)
@@ -164,7 +163,7 @@ public static class SeedData
             db.Processos.AddRange(processos);
             db.SaveChanges();
 
-            // Stage 5: Audiencias (needs processo IDs)
+            // Stage 5: Audiencias
             var tiposA = new[] { "Inicial", "Instrução", "Julgamento", "Conciliação", "Perícia" };
             var locais = new[] { "Foro Central da Barra Funda", "Foro Regional da Lapa", "TRT 2ª Região", "TJSP — Pátio do Colégio" };
             var sitAud = new[] { "Agendada", "Agendada", "Realizada", "Cancelada" };
@@ -211,7 +210,6 @@ public static class SeedData
             db.SaveChanges();
         }
 
-        // Group A — simple tables (Task 1)
         if (!db.GuiaSindicais.Any() && db.Contribuintes.Any())
         {
             var entidade1 = db.Entidades.OrderBy(e => e.Id).First();

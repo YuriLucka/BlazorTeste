@@ -2,7 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using BlazorTeste.Api.Auth;
+using BlazorTeste.Infrastructure.Security;
 using BlazorTeste.Infrastructure.Data;
 using BlazorTeste.Api.Models;
 using Usuario = BlazorTeste.Domain.Entities.Usuario;

@@ -1,13 +1,13 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using BlazorTeste.Api.Data;
 using BlazorTeste.Application.Services.Implementations;
 using BlazorTeste.Application.Services.Interfaces;
 using BlazorTeste.Infrastructure;
 using BlazorTeste.Infrastructure.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -62,7 +62,16 @@ builder.Services.AddControllers().AddJsonOptions(opt =>
     opt.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
 });
 
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(opt =>
+{
+    opt.AddDocumentTransformer((doc, _, _) =>
+    {
+        doc.Info.Title = "SindERP API";
+        doc.Info.Version = "v1";
+        doc.Info.Description = "API do Sistema de Gestão Sindical SindERP";
+        return Task.CompletedTask;
+    });
+});
 
 var app = builder.Build();
 
@@ -73,7 +82,15 @@ using (var scope = app.Services.CreateScope())
 }
 
 if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
+    app.MapScalarApiReference(opt =>
+    {
+        opt.Title = "SindERP API";
+        opt.Theme = ScalarTheme.BluePlanet;
+        opt.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
+}
 
 app.UseCors();
 app.UseAuthentication();

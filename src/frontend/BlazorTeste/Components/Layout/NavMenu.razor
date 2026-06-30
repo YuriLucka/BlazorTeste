@@ -1,52 +1,251 @@
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
 
-<MudNavMenu Class="py-2">
-    <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
-        Dashboard
-    </MudNavLink>
+<div class="px-3 pt-3 pb-1">
+    <MudTextField @bind-Value="_search"
+                  Placeholder="Buscar no menu..."
+                  Adornment="Adornment.Start"
+                  AdornmentIcon="@Icons.Material.Filled.Search"
+                  Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
+                  Clearable="true"
+                  Immediate="true"
+                  Class="nav-search-field" />
+</div>
 
-    <MudDivider Class="my-2" />
-    <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Operacional</MudText>
+<MudNavMenu Class="py-1">
 
-    <MudNavLink Href="/contribuintes" Icon="@Icons.Material.Filled.Business">
-        Contribuintes
-    </MudNavLink>
-    <MudNavLink Href="/cobrancas" Icon="@Icons.Material.Filled.RequestQuote">
-        Cobranças
-    </MudNavLink>
-    <MudDivider Class="my-2" />
-    <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Módulos</MudText>
+    @* ── Dashboard ── *@
+    @if (S("Dashboard"))
+    {
+        <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
+            Dashboard
+        </MudNavLink>
+    }
 
-    <MudNavLink Href="/juridico" Icon="@Icons.Material.Filled.Gavel">
-        Jurídico
-    </MudNavLink>
-    <MudNavLink Href="/financeiro" Icon="@Icons.Material.Filled.AccountBalance">
-        Financeiro
-    </MudNavLink>
-    <MudNavLink Href="/mailing" Icon="@Icons.Material.Filled.Email">
-        Mailing
-    </MudNavLink>
+    @* ── Operacional ── *@
+    @if (G("Contribuintes","Lista Geral","Cadastro","Importação em Lote","Histórico de Alterações",
+           "Cobranças","Lista de Cobranças","Baixa de Cobrança","Negociação","Emissão de Boleto","Inadimplência"))
+    {
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Operacional</MudText>
 
-    <MudDivider Class="my-2" />
-    <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Administração</MudText>
+        @if (G("Contribuintes","Lista Geral","Cadastro","Importação em Lote","Histórico de Alterações"))
+        {
+            <MudNavGroup Title="Contribuintes" Icon="@Icons.Material.Filled.Business"
+                         Expanded="@E("contrib","Contribuintes","Lista Geral","Cadastro","Importação em Lote","Histórico de Alterações")"
+                         ExpandedChanged="@(v => SE("contrib", v))">
+                @if (S("Lista Geral"))          { <MudNavLink Href="/contribuintes">Lista Geral</MudNavLink> }
+                @if (S("Cadastro"))             { <MudNavLink Disabled="true">Cadastro</MudNavLink> }
+                @if (S("Importação em Lote"))   { <MudNavLink Disabled="true">Importação em Lote</MudNavLink> }
+                @if (S("Histórico de Alterações")) { <MudNavLink Disabled="true">Histórico de Alterações</MudNavLink> }
+            </MudNavGroup>
+        }
 
-    <MudNavLink Href="/entidades" Icon="@Icons.Material.Filled.AccountTree">
-        Entidades
-    </MudNavLink>
-    <MudNavLink Href="/usuarios" Icon="@Icons.Material.Filled.People">
-        Usuários
-    </MudNavLink>
+        @if (G("Cobranças","Lista de Cobranças","Baixa de Cobrança","Negociação","Emissão de Boleto","Inadimplência"))
+        {
+            <MudNavGroup Title="Cobranças" Icon="@Icons.Material.Filled.RequestQuote"
+                         Expanded="@E("cobra","Cobranças","Lista de Cobranças","Baixa de Cobrança","Negociação","Emissão de Boleto","Inadimplência")"
+                         ExpandedChanged="@(v => SE("cobra", v))">
+                @if (S("Lista de Cobranças"))   { <MudNavLink Href="/cobrancas">Lista de Cobranças</MudNavLink> }
+                @if (S("Baixa de Cobrança"))    { <MudNavLink Href="/baixa">Baixa de Cobrança</MudNavLink> }
+                @if (S("Negociação"))           { <MudNavLink Href="/negociacao">Negociação</MudNavLink> }
+                @if (S("Emissão de Boleto"))    { <MudNavLink Disabled="true">Emissão de Boleto</MudNavLink> }
+                @if (S("Inadimplência"))        { <MudNavLink Disabled="true">Relatório de Inadimplência</MudNavLink> }
+            </MudNavGroup>
+        }
+    }
 
-    <MudDivider Class="my-2" />
-    <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Interações</MudText>
+    @* ── Módulos ── *@
+    @if (G("Financeiro","Visão Geral Financeira","Lançamentos","Contas a Pagar","Contas a Receber","Fluxo de Caixa",
+           "Jurídico","Processos","Audiências","Honorários","Certidões",
+           "Mailing","Campanhas","Templates","Segmentação","Histórico de Disparos",
+           "Eventos","Lista de Eventos","Inscrições","Certificados","Controle de Presenças",
+           "Guia Sindical","Publicações","Categorias",
+           "Negociações","Acordos Coletivos","Parcelas","Histórico de Negociações"))
+    {
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Módulos</MudText>
 
-    <MudNavLink Icon="@Icons.Material.Filled.NotificationsActive" OnClick="EnviarNotificacao">
-        Notificação
-    </MudNavLink>
+        @if (G("Financeiro","Visão Geral Financeira","Lançamentos","Contas a Pagar","Contas a Receber","Fluxo de Caixa"))
+        {
+            <MudNavGroup Title="Financeiro" Icon="@Icons.Material.Filled.AccountBalance"
+                         Expanded="@E("fin","Financeiro","Visão Geral Financeira","Lançamentos","Contas a Pagar","Contas a Receber","Fluxo de Caixa")"
+                         ExpandedChanged="@(v => SE("fin", v))">
+                @if (S("Visão Geral Financeira")) { <MudNavLink Href="/financeiro">Visão Geral</MudNavLink> }
+                @if (S("Lançamentos"))           { <MudNavLink Disabled="true">Lançamentos</MudNavLink> }
+                @if (S("Contas a Pagar"))        { <MudNavLink Disabled="true">Contas a Pagar</MudNavLink> }
+                @if (S("Contas a Receber"))      { <MudNavLink Disabled="true">Contas a Receber</MudNavLink> }
+                @if (S("Fluxo de Caixa"))        { <MudNavLink Disabled="true">Fluxo de Caixa</MudNavLink> }
+            </MudNavGroup>
+        }
+
+        @if (G("Jurídico","Processos","Audiências","Honorários","Certidões"))
+        {
+            <MudNavGroup Title="Jurídico" Icon="@Icons.Material.Filled.Gavel"
+                         Expanded="@E("jur","Jurídico","Processos","Audiências","Honorários","Certidões")"
+                         ExpandedChanged="@(v => SE("jur", v))">
+                @if (S("Processos"))   { <MudNavLink Href="/juridico">Processos</MudNavLink> }
+                @if (S("Audiências")) { <MudNavLink Disabled="true">Audiências</MudNavLink> }
+                @if (S("Honorários")) { <MudNavLink Disabled="true">Honorários</MudNavLink> }
+                @if (S("Certidões"))  { <MudNavLink Disabled="true">Certidões</MudNavLink> }
+            </MudNavGroup>
+        }
+
+        @if (G("Mailing","Campanhas","Templates","Segmentação","Histórico de Disparos"))
+        {
+            <MudNavGroup Title="Mailing" Icon="@Icons.Material.Filled.Email"
+                         Expanded="@E("mail","Mailing","Campanhas","Templates","Segmentação","Histórico de Disparos")"
+                         ExpandedChanged="@(v => SE("mail", v))">
+                @if (S("Campanhas"))              { <MudNavLink Href="/mailing">Campanhas</MudNavLink> }
+                @if (S("Templates"))              { <MudNavLink Disabled="true">Templates</MudNavLink> }
+                @if (S("Segmentação"))            { <MudNavLink Disabled="true">Segmentação</MudNavLink> }
+                @if (S("Histórico de Disparos"))  { <MudNavLink Disabled="true">Histórico de Disparos</MudNavLink> }
+            </MudNavGroup>
+        }
+
+        @if (G("Eventos","Lista de Eventos","Inscrições","Certificados","Controle de Presenças"))
+        {
+            <MudNavGroup Title="Eventos" Icon="@Icons.Material.Filled.Event"
+                         Expanded="@E("evt","Eventos","Lista de Eventos","Inscrições","Certificados","Controle de Presenças")"
+                         ExpandedChanged="@(v => SE("evt", v))">
+                @if (S("Lista de Eventos"))        { <MudNavLink Href="/eventos">Lista de Eventos</MudNavLink> }
+                @if (S("Inscrições"))              { <MudNavLink Disabled="true">Inscrições</MudNavLink> }
+                @if (S("Certificados"))            { <MudNavLink Disabled="true">Certificados</MudNavLink> }
+                @if (S("Controle de Presenças"))   { <MudNavLink Disabled="true">Controle de Presenças</MudNavLink> }
+            </MudNavGroup>
+        }
+
+        @if (G("Guia Sindical","Publicações","Categorias"))
+        {
+            <MudNavGroup Title="Guia Sindical" Icon="@Icons.Material.Filled.MenuBook"
+                         Expanded="@E("guia","Guia Sindical","Publicações","Categorias")"
+                         ExpandedChanged="@(v => SE("guia", v))">
+                @if (S("Publicações"))  { <MudNavLink Href="/guiasindical">Publicações</MudNavLink> }
+                @if (S("Categorias"))   { <MudNavLink Disabled="true">Categorias</MudNavLink> }
+            </MudNavGroup>
+        }
+
+        @if (G("Negociações","Acordos Coletivos","Parcelas","Histórico de Negociações"))
+        {
+            <MudNavGroup Title="Negociações" Icon="@Icons.Material.Filled.Handshake"
+                         Expanded="@E("neg","Negociações","Acordos Coletivos","Parcelas","Histórico de Negociações")"
+                         ExpandedChanged="@(v => SE("neg", v))">
+                @if (S("Acordos Coletivos"))          { <MudNavLink Href="/negociacao">Acordos Coletivos</MudNavLink> }
+                @if (S("Parcelas"))                   { <MudNavLink Disabled="true">Parcelas</MudNavLink> }
+                @if (S("Histórico de Negociações"))   { <MudNavLink Disabled="true">Histórico</MudNavLink> }
+            </MudNavGroup>
+        }
+    }
+
+    @* ── Relatórios ── *@
+    @if (G("Relatórios","Visão Geral","Por Contribuinte","Por Período","Relatório Financeiro","Inadimplência","Exportações"))
+    {
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Relatórios</MudText>
+
+        <MudNavGroup Title="Relatórios" Icon="@Icons.Material.Filled.Assessment"
+                     Expanded="@E("rel","Relatórios","Visão Geral","Por Contribuinte","Por Período","Relatório Financeiro","Inadimplência","Exportações")"
+                     ExpandedChanged="@(v => SE("rel", v))">
+            @if (S("Visão Geral"))          { <MudNavLink Href="/relatorios">Visão Geral</MudNavLink> }
+            @if (S("Por Contribuinte"))     { <MudNavLink Disabled="true">Por Contribuinte</MudNavLink> }
+            @if (S("Por Período"))          { <MudNavLink Disabled="true">Por Período</MudNavLink> }
+            @if (S("Relatório Financeiro")) { <MudNavLink Disabled="true">Financeiro</MudNavLink> }
+            @if (S("Inadimplência"))        { <MudNavLink Disabled="true">Inadimplência</MudNavLink> }
+            @if (S("Exportações"))          { <MudNavLink Disabled="true">Exportações</MudNavLink> }
+        </MudNavGroup>
+    }
+
+    @* ── Administração ── *@
+    @if (G("Entidades","Cadastro de Entidades","Convênios","Filiais",
+           "Configurações","Geral","Banco","E-mail SMTP","Integrações",
+           "Usuários","Lista de Usuários","Perfis de Acesso","Permissões","Auditoria de Acessos"))
+    {
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Administração</MudText>
+
+        @if (G("Entidades","Cadastro de Entidades","Convênios","Filiais"))
+        {
+            <MudNavGroup Title="Entidades" Icon="@Icons.Material.Filled.AccountTree"
+                         Expanded="@E("ent","Entidades","Cadastro de Entidades","Convênios","Filiais")"
+                         ExpandedChanged="@(v => SE("ent", v))">
+                @if (S("Cadastro de Entidades")) { <MudNavLink Href="/entidades">Cadastro de Entidades</MudNavLink> }
+                @if (S("Convênios"))             { <MudNavLink Disabled="true">Convênios</MudNavLink> }
+                @if (S("Filiais"))               { <MudNavLink Disabled="true">Filiais</MudNavLink> }
+            </MudNavGroup>
+        }
+
+        @if (G("Configurações","Geral","Banco","E-mail SMTP","Integrações"))
+        {
+            <MudNavGroup Title="Configurações" Icon="@Icons.Material.Filled.Settings"
+                         Expanded="@E("cfg","Configurações","Geral","Banco","E-mail SMTP","Integrações")"
+                         ExpandedChanged="@(v => SE("cfg", v))">
+                @if (S("Geral"))        { <MudNavLink Href="/configuracoes">Geral</MudNavLink> }
+                @if (S("Banco"))        { <MudNavLink Disabled="true">Banco</MudNavLink> }
+                @if (S("E-mail SMTP"))  { <MudNavLink Disabled="true">E-mail SMTP</MudNavLink> }
+                @if (S("Integrações"))  { <MudNavLink Disabled="true">Integrações</MudNavLink> }
+            </MudNavGroup>
+        }
+
+        @if (G("Usuários","Lista de Usuários","Perfis de Acesso","Permissões","Auditoria de Acessos"))
+        {
+            <MudNavGroup Title="Usuários" Icon="@Icons.Material.Filled.People"
+                         Expanded="@E("usr","Usuários","Lista de Usuários","Perfis de Acesso","Permissões","Auditoria de Acessos")"
+                         ExpandedChanged="@(v => SE("usr", v))">
+                @if (S("Lista de Usuários"))      { <MudNavLink Href="/usuarios">Lista de Usuários</MudNavLink> }
+                @if (S("Perfis de Acesso"))       { <MudNavLink Disabled="true">Perfis de Acesso</MudNavLink> }
+                @if (S("Permissões"))             { <MudNavLink Disabled="true">Permissões</MudNavLink> }
+                @if (S("Auditoria de Acessos"))   { <MudNavLink Disabled="true">Auditoria de Acessos</MudNavLink> }
+            </MudNavGroup>
+        }
+    }
+
+    @* ── Interações ── *@
+    @if (S("Notificação"))
+    {
+        <MudDivider Class="my-2" />
+        <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Interações</MudText>
+        <MudNavLink Icon="@Icons.Material.Filled.NotificationsActive" OnClick="EnviarNotificacao">
+            Notificação
+        </MudNavLink>
+    }
+
 </MudNavMenu>
 
+<style>
+    .nav-search-field .mud-input-outlined .mud-input {
+        font-size: 0.8125rem;
+    }
+    .mud-nav-link.disabled {
+        opacity: 0.4;
+        cursor: default;
+        pointer-events: none;
+    }
+</style>
+
 @code {
+    private string _search = "";
+    private bool AnySearch => !string.IsNullOrWhiteSpace(_search);
+    private readonly Dictionary<string, bool> _exp = new();
+
+    private bool S(string label)
+        => !AnySearch || label.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    private bool G(params string[] labels)
+        => !AnySearch || labels.Any(l => l.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private bool E(string key, params string[] labels)
+    {
+        if (AnySearch) return G(labels);
+        _exp.TryGetValue(key, out var v);
+        return v;
+    }
+
+    private void SE(string key, bool value)
+    {
+        if (!AnySearch) _exp[key] = value;
+    }
+
     private async Task EnviarNotificacao()
     {
         var result = await JS.InvokeAsync<string>(
@@ -67,4 +266,3 @@
             Snackbar.Add(msg, Severity.Warning);
     }
 }
-

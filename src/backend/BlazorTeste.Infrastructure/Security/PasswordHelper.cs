@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace BlazorTeste.Api.Auth;
+namespace BlazorTeste.Infrastructure.Security;
 
 public static class PasswordHelper
 {
