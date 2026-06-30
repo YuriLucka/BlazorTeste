@@ -18,17 +18,22 @@ builder.Services.AddScoped<AuthenticationStateProvider, JwtAuthStateProvider>();
 builder.Services.AddAuthorizationCore();
 builder.Services.AddCascadingAuthenticationState();
 
-// HttpClient with auth handler (Bearer + credentials:include on every request)
+var baseUri = new Uri(builder.HostEnvironment.BaseAddress);
+var apiPort = baseUri.Scheme == "https" ? 7247 : 5141;
+var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
+    ?? $"{baseUri.Scheme}://{baseUri.Host}:{apiPort}";
+
+// HttpClient with auth handler (Bearer + credentials:include on every request; auto-refresh on 401)
 builder.Services.AddScoped(sp =>
 {
     var tokenService = sp.GetRequiredService<TokenService>();
-    var handler = new AuthHttpMessageHandler(tokenService)
+    var handler = new AuthHttpMessageHandler(tokenService, new Uri(apiBaseUrl))
     {
         InnerHandler = new HttpClientHandler()
     };
     return new HttpClient(handler)
     {
-        BaseAddress = new Uri("https://localhost:7247")
+        BaseAddress = new Uri(apiBaseUrl)
     };
 });
 
@@ -51,7 +56,7 @@ var host = builder.Build();
 
 // Restore session from refresh token cookie before first render
 var tokenService = host.Services.GetRequiredService<TokenService>();
-using var authClient = new HttpClient { BaseAddress = new Uri("https://localhost:7247") };
+using var authClient = new HttpClient { BaseAddress = new Uri(apiBaseUrl) };
 await tokenService.InitializeAsync(authClient);
 
 await host.RunAsync();

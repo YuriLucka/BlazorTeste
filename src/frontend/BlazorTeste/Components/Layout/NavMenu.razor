@@ -1,5 +1,6 @@
 @inject IJSRuntime JS
 @inject ISnackbar Snackbar
+@inject CobrancaService CobrancaService
 
 <div class="px-3 pt-3 pb-1">
     <MudTextField @bind-Value="_search"
@@ -201,13 +202,22 @@
     }
 
     @* ── Interações ── *@
-    @if (S("Notificação"))
+    @if (G("Notificações","Simples","Persistente","Silenciosa","Urgente","Ao clicar abre app","Com Imagem","Com Ação","Dinâmica (DB)"))
     {
         <MudDivider Class="my-2" />
         <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Interações</MudText>
-        <MudNavLink Icon="@Icons.Material.Filled.NotificationsActive" OnClick="EnviarNotificacao">
-            Notificação
-        </MudNavLink>
+        <MudNavGroup Title="Notificações" Icon="@Icons.Material.Filled.NotificationsActive"
+                     Expanded="@E("notif","Notificações","Simples","Persistente","Silenciosa","Urgente","Ao clicar abre app","Com Imagem","Com Ação","Dinâmica (DB)")"
+                     ExpandedChanged="@(v => SE("notif", v))">
+            @if (S("Simples"))              { <MudNavLink OnClick="@(() => Notificar("simples"))">Simples</MudNavLink> }
+            @if (S("Persistente"))          { <MudNavLink OnClick="@(() => Notificar("persistente"))">Persistente</MudNavLink> }
+            @if (S("Silenciosa"))           { <MudNavLink OnClick="@(() => Notificar("silenciosa"))">Silenciosa</MudNavLink> }
+            @if (S("Urgente"))              { <MudNavLink OnClick="@(() => Notificar("urgente"))">Urgente</MudNavLink> }
+            @if (S("Ao clicar abre app"))   { <MudNavLink OnClick="@(() => Notificar("clique"))">Ao clicar abre app</MudNavLink> }
+            @if (S("Com Imagem"))           { <MudNavLink OnClick="@(() => Notificar("imagem"))">Com Imagem</MudNavLink> }
+            @if (S("Com Ação"))             { <MudNavLink OnClick="@(() => NotificarComAcao())">Com Ação</MudNavLink> }
+            @if (S("Dinâmica (DB)"))        { <MudNavLink OnClick="@(() => NotificarDinamica())">Dinâmica (DB)</MudNavLink> }
+        </MudNavGroup>
     }
 
 </MudNavMenu>
@@ -246,17 +256,181 @@
         if (!AnySearch) _exp[key] = value;
     }
 
-    private async Task EnviarNotificacao()
+    private async Task Notificar(string tipo)
     {
-        var result = await JS.InvokeAsync<string>(
-            "sinderpNotifications.requestAndNotify",
-            "SindERP",
-            "Notificação de teste do sistema sindical.",
-            "/favicon.png");
+        var opts = tipo switch
+        {
+            "simples" => new
+            {
+                title = "SindERP",
+                body = "Notificação simples — aparece por 6 segundos e fecha sozinha.",
+                icon = "/favicon.png",
+                image = (string?)null,
+                silent = false,
+                requireInteraction = false,
+                renotify = false,
+                tag = "sinderp-simples",
+                url = (string?)null,
+                duration = 6000
+            },
+            "persistente" => new
+            {
+                title = "SindERP — Atenção",
+                body = "Notificação persistente — fica na tela até você fechar manualmente.",
+                icon = "/favicon.png",
+                image = (string?)null,
+                silent = false,
+                requireInteraction = true,
+                renotify = true,
+                tag = "sinderp-persistente",
+                url = (string?)null,
+                duration = 0
+            },
+            "silenciosa" => new
+            {
+                title = "SindERP",
+                body = "Notificação silenciosa — sem som, sem vibração.",
+                icon = "/favicon.png",
+                image = (string?)null,
+                silent = true,
+                requireInteraction = false,
+                renotify = false,
+                tag = "sinderp-silenciosa",
+                url = (string?)null,
+                duration = 6000
+            },
+            "urgente" => new
+            {
+                title = "⚠️ SindERP — URGENTE",
+                body = "51 cobranças vencidas aguardam ação imediata!",
+                icon = "/favicon.png",
+                image = (string?)null,
+                silent = false,
+                requireInteraction = true,
+                renotify = true,
+                tag = "sinderp-urgente",
+                url = (string?)null,
+                duration = 0
+            },
+            "imagem" => new
+            {
+                title = "SindERP — Com Imagem",
+                body = "Notificação com imagem no corpo (requer Chrome desktop).",
+                icon = "/favicon.png",
+                image = "https://picsum.photos/seed/sinderp/400/200",
+                silent = false,
+                requireInteraction = false,
+                renotify = false,
+                tag = "sinderp-imagem",
+                url = (string?)null,
+                duration = 10000
+            },
+            _ => new
+            {
+                title = "SindERP",
+                body = "Clique aqui para abrir o Dashboard.",
+                icon = "/favicon.png",
+                image = (string?)null,
+                silent = false,
+                requireInteraction = false,
+                renotify = false,
+                tag = "sinderp-clique",
+                url = (string?)"/",
+                duration = 8000
+            }
+        };
+
+        var result = await JS.InvokeAsync<string>("sinderpNotifications.send", opts);
 
         var msg = result switch
         {
             "granted"     => null,
+            "denied"      => "Notificações bloqueadas pelo navegador.",
+            "unsupported" => "Navegador não suporta notificações.",
+            _             => "Permissão não concedida."
+        };
+
+        if (msg != null)
+            Snackbar.Add(msg, Severity.Warning);
+    }
+
+    private async Task NotificarDinamica()
+    {
+        List<Cobranca> lista;
+        try { lista = await CobrancaService.GetAllAsync(); }
+        catch { Snackbar.Add("Erro ao buscar cobranças.", Severity.Error); return; }
+
+        if (lista.Count == 0) { Snackbar.Add("Nenhuma cobrança encontrada.", Severity.Warning); return; }
+
+        var c = lista[Random.Shared.Next(lista.Count)];
+        var statusKey  = c.Status.ToString().ToLower();
+        var valorFmt   = c.Valor.ToString("C", new System.Globalization.CultureInfo("pt-BR"));
+        var vencFmt    = c.Vencimento.ToString("dd/MM/yyyy");
+        var statusDesc = c.Status switch
+        {
+            StatusCobranca.Pago      => "✓ Pago",
+            StatusCobranca.Vencido   => "⚠️ Vencido",
+            StatusCobranca.Pendente  => "Pendente",
+            StatusCobranca.Cancelado => "Cancelado",
+            _                        => c.Status.ToString()
+        };
+
+        var avatarUrl = "/img/avatar-teste.jpg";
+
+        var imageDataUrl = await JS.InvokeAsync<string>(
+            "sinderpNotifications.gerarImagemCobranca",
+            statusKey, c.RazaoSocialContribuinte, valorFmt, vencFmt, avatarUrl);
+
+        var opts = new
+        {
+            title    = $"SindERP — {statusDesc}",
+            body     = $"{c.RazaoSocialContribuinte}\n{valorFmt}  ·  Venc. {vencFmt}",
+            icon     = "/favicon.png",
+            image    = imageDataUrl,
+            silent   = false,
+            requireInteraction = false,
+            renotify = true,
+            tag      = "sinderp-dinamica",
+            url      = (string?)"/cobrancas",
+            duration = 12000
+        };
+
+        var result = await JS.InvokeAsync<string>("sinderpNotifications.send", opts);
+        if (result is "denied")      Snackbar.Add("Notificações bloqueadas.", Severity.Warning);
+        else if (result is "unsupported") Snackbar.Add("Navegador não suporta notificações.", Severity.Warning);
+    }
+
+    private async Task NotificarComAcao()
+    {
+        var opts = new
+        {
+            title = "SindERP — Cobrança Vencida",
+            body = "R$ 1.747,36 — Choperia Malte Dourado LTDA",
+            icon = "/favicon.png",
+            image = (string?)null,
+            silent = false,
+            requireInteraction = true,
+            renotify = true,
+            tag = "sinderp-acao",
+            url = "/cobrancas",
+            actionButtons = new[]
+            {
+                new { action = "baixar", title = "Registrar Baixa" },
+                new { action = "ver",    title = "Ver Detalhes" }
+            },
+            actions = new Dictionary<string, string>
+            {
+                ["baixar"] = "/baixa",
+                ["ver"]    = "/cobrancas"
+            }
+        };
+
+        var result = await JS.InvokeAsync<string>("sinderpNotifications.sendWithActions", opts);
+
+        var msg = result switch
+        {
+            "granted"     => null,
+            "no-sw"       => "Service Worker não disponível (requer HTTPS).",
             "denied"      => "Notificações bloqueadas pelo navegador.",
             "unsupported" => "Navegador não suporta notificações.",
             _             => "Permissão não concedida."

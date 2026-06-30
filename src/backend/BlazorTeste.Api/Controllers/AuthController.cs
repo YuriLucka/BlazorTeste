@@ -71,11 +71,12 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
                 await db.SaveChangesAsync();
             }
         }
+        var isHttps = Request.IsHttps;
         Response.Cookies.Delete(CookieName, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None
+            Secure = isHttps,
+            SameSite = isHttps ? SameSiteMode.None : SameSiteMode.Lax
         });
         return NoContent();
     }
@@ -87,11 +88,12 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
         user.RefreshToken = token;
         user.RefreshTokenExpiry = expiry;
         await db.SaveChangesAsync();
+        var isHttps = Request.IsHttps;
         Response.Cookies.Append(CookieName, token, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
+            Secure = isHttps,
+            SameSite = isHttps ? SameSiteMode.None : SameSiteMode.Lax,
             Expires = expiry
         });
     }

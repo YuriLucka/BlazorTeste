@@ -29,3 +29,22 @@ async function onFetch(event) {
     const cachedResponse = await caches.match(event.request, { ignoreSearch: true });
     return cachedResponse ?? fetch(event.request);
 }
+
+self.addEventListener('notificationclick', event => {
+    const action = event.action;
+    const url = action
+        ? (event.notification.data?.actions?.[action] ?? '/')
+        : (event.notification.data?.url ?? '/');
+    event.notification.close();
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+            for (const client of clientList) {
+                if (client.url.includes(self.location.origin) && 'focus' in client) {
+                    client.navigate(url);
+                    return client.focus();
+                }
+            }
+            return self.clients.openWindow(url);
+        })
+    );
+});
