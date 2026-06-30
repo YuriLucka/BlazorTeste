@@ -194,21 +194,44 @@
         _pendentes = todas.Where(c => c.Status is StatusCobranca.Pendente or StatusCobranca.Vencido).ToList();
     }
 
-    private void ConfirmarBaixa()
+    private async Task ConfirmarBaixa()
     {
-        var count = _selecionadas.Count;
+        var ids = _selecionadas.Select(c => c.Id).ToList();
         _selecionadas.Clear();
         _dialogOpen = false;
-        Snackbar.Add($"{count} cobrança(s) baixada(s) com sucesso!", Severity.Success);
+
+        int ok = 0;
+        foreach (var id in ids)
+        {
+            if (await BaixaCobrancaService.BaixarAsync(id))
+                ok++;
+        }
+
+        _historico = await BaixaCobrancaService.GetHistoricoAsync();
+        var todas = await CobrancaService.GetAllAsync();
+        _pendentes = todas.Where(c => c.Status is StatusCobranca.Pendente or StatusCobranca.Vencido).ToList();
+
+        Snackbar.Add($"{ok} cobrança(s) baixada(s) com sucesso!", Severity.Success);
     }
 
     private async Task SimularProcessamento()
     {
         _processando = true;
         StateHasChanged();
-        await Task.Delay(3000);
+        var result = await BaixaCobrancaService.ProcessarArquivoAsync();
         _processando = false;
-        Snackbar.Add("Arquivo processado: 12 cobranças baixadas, 0 erros.", Severity.Success);
+
+        if (result is not null)
+        {
+            _historico = await BaixaCobrancaService.GetHistoricoAsync();
+            var todas = await CobrancaService.GetAllAsync();
+            _pendentes = todas.Where(c => c.Status is StatusCobranca.Pendente or StatusCobranca.Vencido).ToList();
+            Snackbar.Add(result.Mensagem, Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Erro ao processar arquivo.", Severity.Error);
+        }
     }
 
 }

@@ -1,5 +1,6 @@
 @page "/relatorios"
 @inject RelatorioService RelatorioService
+@inject ContribuinteService ContribuinteService
 @inject ISnackbar Snackbar
 
 <PageTitle>Relatórios — SindERP</PageTitle>
@@ -97,8 +98,10 @@
             <MudSelect T="string" Label="Contribuinte" Variant="Variant.Outlined" Value="@_filtroContribuinte"
                        ValueChanged="@(v => _filtroContribuinte = v)">
                 <MudSelectItem Value="@("")">Todos</MudSelectItem>
-                <MudSelectItem Value="@("Hotel Paulista S/A")">Hotel Paulista S/A</MudSelectItem>
-                <MudSelectItem Value="@("Restaurante Bella Vista Ltda")">Restaurante Bella Vista Ltda</MudSelectItem>
+                @foreach (var c in _contribuintes)
+                {
+                    <MudSelectItem Value="@c.RazaoSocial">@c.RazaoSocial</MudSelectItem>
+                }
             </MudSelect>
 
             <MudSelect T="string" Label="Status" Variant="Variant.Outlined" Value="@_filtroStatus"
@@ -132,6 +135,7 @@
 @code {
     private List<Relatorio> _all = new();
     private List<Relatorio> _filtered = new();
+    private List<Contribuinte> _contribuintes = new();
     private string _catAtiva = "Todos";
     private string _search = "";
     private Relatorio? _selectedRel;
@@ -146,7 +150,11 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _all = await RelatorioService.GetAllAsync();
+        var relTask = RelatorioService.GetAllAsync();
+        var contTask = ContribuinteService.GetAllAsync();
+        await Task.WhenAll(relTask, contTask);
+        _all = relTask.Result;
+        _contribuintes = contTask.Result;
         ApplyFilter();
     }
 
@@ -164,11 +172,23 @@
 
     private async Task GerarRelatorio()
     {
+        if (_selectedRel is null) return;
         _gerando = true;
-        await Task.Delay(2000);
+        var request = new GerarRelatorioRequest
+        {
+            DataInicio = _dateRange?.Start,
+            DataFim = _dateRange?.End,
+            Contribuinte = string.IsNullOrEmpty(_filtroContribuinte) ? null : _filtroContribuinte,
+            Status = string.IsNullOrEmpty(_filtroStatus) ? null : _filtroStatus,
+            Formato = _formato
+        };
+        var result = await RelatorioService.GerarAsync(_selectedRel.Id, request);
         _gerando = false;
         _drawerOpen = false;
-        Snackbar.Add($"Relatório '{_selectedRel?.Nome}' gerado com sucesso!", Severity.Success);
+        if (result?.Sucesso == true)
+            Snackbar.Add(result.Mensagem, Severity.Success);
+        else
+            Snackbar.Add("Erro ao gerar relatório.", Severity.Error);
     }
 
     private string GetCatLabel(string cat) => cat switch

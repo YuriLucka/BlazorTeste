@@ -6,5 +6,5 @@ namespace BlazorTeste.Services;
 public class MailingService(HttpClient http)
 {
     public async Task<List<Campanha>> GetAllAsync() =>
-        await http.GetFromJsonAsync<List<Campanha>>("api/mailing") ?? new();
+        await http.GetFromJsonAsync<List<Campanha>>("api/mailing", ApiJsonOptions.Default) ?? new();
 }
