@@ -1,4 +1,3 @@
-using System.Text.Json;
 using BlazorTeste.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,90 +22,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Evento> Eventos => Set<Evento>();
     public DbSet<ConfiguracaoEntidade> Configuracoes => Set<ConfiguracaoEntidade>();
 
-    private static readonly JsonSerializerOptions _json = new();
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<decimal>().HavePrecision(18, 2);
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Entidade>(b =>
-        {
-            b.Property(e => e.Cnaes)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, _json),
-                    v => JsonSerializer.Deserialize<List<string>>(v, _json) ?? new());
-            b.Property(e => e.Cidades)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, _json),
-                    v => JsonSerializer.Deserialize<List<string>>(v, _json) ?? new());
-        });
-
-        modelBuilder.Entity<Contribuinte>(b =>
-        {
-            b.OwnsMany(c => c.Enderecos, owned =>
-            {
-                owned.ToTable("Enderecos");
-                owned.WithOwner().HasForeignKey("ContribuinteId");
-            });
-            b.OwnsMany(c => c.Contatos, owned =>
-            {
-                owned.ToTable("Contatos");
-                owned.WithOwner().HasForeignKey("ContribuinteId");
-            });
-            b.OwnsMany(c => c.Socios, owned =>
-            {
-                owned.ToTable("Socios");
-                owned.WithOwner().HasForeignKey("ContribuinteId");
-                owned.Ignore(s => s.ContribuinteId);
-            });
-            b.OwnsMany(c => c.Historico, owned =>
-            {
-                owned.ToTable("HistoricoMensais");
-                owned.WithOwner().HasForeignKey("ContribuinteId");
-            });
-        });
-
-        modelBuilder.Entity<Usuario>(b =>
-        {
-            b.Property(u => u.Permissoes)
-                .HasConversion(
-                    v => JsonSerializer.Serialize(v, _json),
-                    v => JsonSerializer.Deserialize<List<PermissaoEntidade>>(v, _json) ?? new());
-        });
-
-        modelBuilder.Entity<Negociacao>(b =>
-        {
-            b.OwnsMany(n => n.Parcelas, owned =>
-            {
-                owned.ToTable("NegociacaoParcelas");
-                owned.WithOwner().HasForeignKey("NegociacaoId");
-            });
-            b.OwnsMany(n => n.CobrancasOriginais, owned =>
-            {
-                owned.ToTable("NegociacaoCobrancasOriginais");
-                owned.WithOwner().HasForeignKey("NegociacaoId");
-            });
-        });
-
-        modelBuilder.Entity<Evento>(b =>
-        {
-            b.OwnsMany(e => e.Inscricoes, owned =>
-            {
-                owned.ToTable("EventoInscricoes");
-                owned.WithOwner().HasForeignKey("EventoId");
-            });
-        });
-
-        modelBuilder.Entity<ConfiguracaoEntidade>(b =>
-        {
-            b.HasKey(c => c.EntidadeId);
-            b.Property(c => c.EntidadeId).ValueGeneratedNever();
-            b.OwnsOne(c => c.Geral, o => o.ToJson());
-            b.OwnsOne(c => c.Cobranca, o =>
-            {
-                o.ToJson();
-                o.OwnsMany(cc => cc.Faixas);
-            });
-            b.OwnsOne(c => c.Email, o => o.ToJson());
-            b.OwnsOne(c => c.Banco, o => o.ToJson());
-        });
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }

@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace BlazorTeste.Api.Migrations
+namespace BlazorTeste.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260629121643_AddGroupAEntities")]
-    partial class AddGroupAEntities
+    [Migration("20260630120620_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,7 @@ namespace BlazorTeste.Api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("BlazorTeste.Models.Advogado", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Advogado", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -60,7 +60,7 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Advogados");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Audiencia", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Audiencia", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -102,7 +102,7 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Audiencias");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Campanha", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Campanha", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -139,7 +139,7 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Campanhas");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Cobranca", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Cobranca", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -160,6 +160,7 @@ namespace BlazorTeste.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Juros")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("LinhaDigitavel")
@@ -167,6 +168,7 @@ namespace BlazorTeste.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Multa")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("RazaoSocialContribuinte")
@@ -180,6 +182,7 @@ namespace BlazorTeste.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("Vencimento")
@@ -190,7 +193,17 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Cobrancas");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Contribuinte", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.ConfiguracaoEntidade", b =>
+                {
+                    b.Property<int>("EntidadeId")
+                        .HasColumnType("int");
+
+                    b.HasKey("EntidadeId");
+
+                    b.ToTable("Configuracoes");
+                });
+
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Contribuinte", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -199,6 +212,7 @@ namespace BlazorTeste.Api.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("CapitalSocial")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Cnae")
@@ -238,7 +252,7 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Contribuintes");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Entidade", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Entidade", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -278,7 +292,62 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Entidades");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Fornecedor", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Evento", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Cidade")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DataFim")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("DataInicio")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("EntidadeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Local")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MaxParticipantes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TaxaInscricao")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TotalInscritos")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Eventos");
+                });
+
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Fornecedor", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -314,7 +383,7 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Fornecedores");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.GuiaSindical", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.GuiaSindical", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -342,6 +411,7 @@ namespace BlazorTeste.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Juros")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("LinhaDigitavel")
@@ -349,6 +419,7 @@ namespace BlazorTeste.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Multa")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("NumeroDocumento")
@@ -363,6 +434,7 @@ namespace BlazorTeste.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("ValorBase")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("Vencimento")
@@ -373,7 +445,7 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("GuiaSindicais");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.LancamentoFinanceiro", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.LancamentoFinanceiro", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -413,6 +485,7 @@ namespace BlazorTeste.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -420,7 +493,58 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("LancamentosFinanceiros");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Processo", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Negociacao", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ContribuinteId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DataAbertura")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DataConclusao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("DebitoOriginal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Desconto")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("EntidadeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NumeroParcelas")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Observacoes")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RazaoSocialContribuinte")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ValorNegociado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Negociacoes");
+                });
+
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Processo", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -470,7 +594,7 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Processos");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.RegistroBaixa", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.RegistroBaixa", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -510,9 +634,11 @@ namespace BlazorTeste.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("ValorOriginal")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("ValorPago")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
@@ -520,7 +646,7 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("RegistrosBaixa");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Relatorio", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Relatorio", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -551,7 +677,7 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Relatorios");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Usuario", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Usuario", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -589,9 +715,183 @@ namespace BlazorTeste.Api.Migrations
                     b.ToTable("Usuarios");
                 });
 
-            modelBuilder.Entity("BlazorTeste.Models.Contribuinte", b =>
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.ConfiguracaoEntidade", b =>
                 {
-                    b.OwnsMany("BlazorTeste.Models.Contato", "Contatos", b1 =>
+                    b.OwnsOne("BlazorTeste.Domain.Entities.ConfiguracaoBanco", "Banco", b1 =>
+                        {
+                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
+
+                            b1.Property<string>("Agencia")
+                                .IsRequired();
+
+                            b1.Property<string>("Banco")
+                                .IsRequired();
+
+                            b1.Property<string>("Carteira")
+                                .IsRequired();
+
+                            b1.Property<string>("Cedente")
+                                .IsRequired();
+
+                            b1.Property<string>("CodigoCedente")
+                                .IsRequired();
+
+                            b1.Property<string>("Conta")
+                                .IsRequired();
+
+                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
+
+                            b1.ToTable("Configuracoes");
+
+                            b1
+                                .ToJson("Banco")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
+                        });
+
+                    b.OwnsOne("BlazorTeste.Domain.Entities.ConfiguracaoCobranca", "Cobranca", b1 =>
+                        {
+                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
+
+                            b1.Property<int>("DiaVencimento");
+
+                            b1.Property<int>("DiasCarencia");
+
+                            b1.Property<bool>("EmissaoAutomatica");
+
+                            b1.Property<int>("EntidadeId");
+
+                            b1.Property<decimal>("PercentualJurosDia")
+                                .HasPrecision(18, 2);
+
+                            b1.Property<decimal>("PercentualMulta")
+                                .HasPrecision(18, 2);
+
+                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
+
+                            b1.ToTable("Configuracoes");
+
+                            b1
+                                .ToJson("Cobranca")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
+
+                            b1.OwnsMany("BlazorTeste.Domain.Entities.FaixaCobranca", "Faixas", b2 =>
+                                {
+                                    b2.Property<int>("ConfiguracaoCobrancaConfiguracaoEntidadeEntidadeId");
+
+                                    b2.Property<int>("__synthesizedOrdinal")
+                                        .ValueGeneratedOnAddOrUpdate();
+
+                                    b2.Property<decimal>("CapitalSocialMax")
+                                        .HasPrecision(18, 2);
+
+                                    b2.Property<decimal>("CapitalSocialMin")
+                                        .HasPrecision(18, 2);
+
+                                    b2.Property<string>("Descricao")
+                                        .IsRequired();
+
+                                    b2.Property<int>("Id");
+
+                                    b2.Property<decimal>("PercentualCapital")
+                                        .HasPrecision(18, 2);
+
+                                    b2.Property<decimal>("ValorFixo")
+                                        .HasPrecision(18, 2);
+
+                                    b2.HasKey("ConfiguracaoCobrancaConfiguracaoEntidadeEntidadeId", "__synthesizedOrdinal");
+
+                                    b2.ToTable("Configuracoes");
+
+                                    b2.WithOwner()
+                                        .HasForeignKey("ConfiguracaoCobrancaConfiguracaoEntidadeEntidadeId");
+                                });
+
+                            b1.Navigation("Faixas");
+                        });
+
+                    b.OwnsOne("BlazorTeste.Domain.Entities.ConfiguracaoEmail", "Email", b1 =>
+                        {
+                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
+
+                            b1.Property<bool>("Ativo");
+
+                            b1.Property<string>("EmailRemetente")
+                                .IsRequired();
+
+                            b1.Property<string>("NomeRemetente")
+                                .IsRequired();
+
+                            b1.Property<int>("Porta");
+
+                            b1.Property<string>("ServidorSmtp")
+                                .IsRequired();
+
+                            b1.Property<bool>("UsarSsl");
+
+                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
+
+                            b1.ToTable("Configuracoes");
+
+                            b1
+                                .ToJson("Email")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
+                        });
+
+                    b.OwnsOne("BlazorTeste.Domain.Entities.ConfiguracaoGeral", "Geral", b1 =>
+                        {
+                            b1.Property<int>("ConfiguracaoEntidadeEntidadeId");
+
+                            b1.Property<string>("EmailContato")
+                                .IsRequired();
+
+                            b1.Property<string>("Endereco")
+                                .IsRequired();
+
+                            b1.Property<int>("EntidadeId");
+
+                            b1.Property<string>("ResponsavelTecnico")
+                                .IsRequired();
+
+                            b1.Property<string>("Telefone")
+                                .IsRequired();
+
+                            b1.HasKey("ConfiguracaoEntidadeEntidadeId");
+
+                            b1.ToTable("Configuracoes");
+
+                            b1
+                                .ToJson("Geral")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ConfiguracaoEntidadeEntidadeId");
+                        });
+
+                    b.Navigation("Banco")
+                        .IsRequired();
+
+                    b.Navigation("Cobranca")
+                        .IsRequired();
+
+                    b.Navigation("Email")
+                        .IsRequired();
+
+                    b.Navigation("Geral")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Contribuinte", b =>
+                {
+                    b.OwnsMany("BlazorTeste.Domain.Entities.Contato", "Contatos", b1 =>
                         {
                             b1.Property<int>("ContribuinteId")
                                 .HasColumnType("int");
@@ -622,7 +922,7 @@ namespace BlazorTeste.Api.Migrations
                                 .HasForeignKey("ContribuinteId");
                         });
 
-                    b.OwnsMany("BlazorTeste.Models.Endereco", "Enderecos", b1 =>
+                    b.OwnsMany("BlazorTeste.Domain.Entities.Endereco", "Enderecos", b1 =>
                         {
                             b1.Property<int>("ContribuinteId")
                                 .HasColumnType("int");
@@ -673,7 +973,7 @@ namespace BlazorTeste.Api.Migrations
                                 .HasForeignKey("ContribuinteId");
                         });
 
-                    b.OwnsMany("BlazorTeste.Models.HistoricoMensal", "Historico", b1 =>
+                    b.OwnsMany("BlazorTeste.Domain.Entities.HistoricoMensal", "Historico", b1 =>
                         {
                             b1.Property<int>("ContribuinteId")
                                 .HasColumnType("int");
@@ -688,6 +988,7 @@ namespace BlazorTeste.Api.Migrations
                                 .HasColumnType("int");
 
                             b1.Property<decimal>("CapitalSocial")
+                                .HasPrecision(18, 2)
                                 .HasColumnType("decimal(18,2)");
 
                             b1.Property<int>("Mes")
@@ -704,7 +1005,7 @@ namespace BlazorTeste.Api.Migrations
                                 .HasForeignKey("ContribuinteId");
                         });
 
-                    b.OwnsMany("BlazorTeste.Models.Socio", "Socios", b1 =>
+                    b.OwnsMany("BlazorTeste.Domain.Entities.Socio", "Socios", b1 =>
                         {
                             b1.Property<int>("ContribuinteId")
                                 .HasColumnType("int");
@@ -726,6 +1027,7 @@ namespace BlazorTeste.Api.Migrations
                                 .HasColumnType("nvarchar(max)");
 
                             b1.Property<decimal>("ValorMensalidade")
+                                .HasPrecision(18, 2)
                                 .HasColumnType("decimal(18,2)");
 
                             b1.HasKey("ContribuinteId", "Id");
@@ -743,6 +1045,143 @@ namespace BlazorTeste.Api.Migrations
                     b.Navigation("Historico");
 
                     b.Navigation("Socios");
+                });
+
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Evento", b =>
+                {
+                    b.OwnsMany("BlazorTeste.Domain.Entities.InscricaoEvento", "Inscricoes", b1 =>
+                        {
+                            b1.Property<int>("EventoId")
+                                .HasColumnType("int");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+
+                            b1.Property<string>("Cargo")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<DateTime>("DataInscricao")
+                                .HasColumnType("datetime2");
+
+                            b1.Property<string>("Email")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("Empresa")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<string>("NomeParticipante")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<bool>("Pago")
+                                .HasColumnType("bit");
+
+                            b1.Property<bool>("Presente")
+                                .HasColumnType("bit");
+
+                            b1.Property<string>("TipoHospedagem")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.HasKey("EventoId", "Id");
+
+                            b1.ToTable("EventoInscricoes", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("EventoId");
+                        });
+
+                    b.Navigation("Inscricoes");
+                });
+
+            modelBuilder.Entity("BlazorTeste.Domain.Entities.Negociacao", b =>
+                {
+                    b.OwnsMany("BlazorTeste.Domain.Entities.CobrancaOriginalNeg", "CobrancasOriginais", b1 =>
+                        {
+                            b1.Property<int>("NegociacaoId")
+                                .HasColumnType("int");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+
+                            b1.Property<int>("AnoReferencia")
+                                .HasColumnType("int");
+
+                            b1.Property<decimal>("Juros")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.Property<decimal>("Multa")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.Property<string>("Tipo")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<decimal>("ValorOriginal")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.HasKey("NegociacaoId", "Id");
+
+                            b1.ToTable("NegociacaoCobrancasOriginais", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("NegociacaoId");
+                        });
+
+                    b.OwnsMany("BlazorTeste.Domain.Entities.ParcelaNegociacao", "Parcelas", b1 =>
+                        {
+                            b1.Property<int>("NegociacaoId")
+                                .HasColumnType("int");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int");
+
+                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
+
+                            b1.Property<DateTime?>("DataPagamento")
+                                .HasColumnType("datetime2");
+
+                            b1.Property<string>("LinhaDigitavel")
+                                .IsRequired()
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.Property<int>("Numero")
+                                .HasColumnType("int");
+
+                            b1.Property<bool>("Pago")
+                                .HasColumnType("bit");
+
+                            b1.Property<decimal>("Valor")
+                                .HasPrecision(18, 2)
+                                .HasColumnType("decimal(18,2)");
+
+                            b1.Property<DateTime>("Vencimento")
+                                .HasColumnType("datetime2");
+
+                            b1.HasKey("NegociacaoId", "Id");
+
+                            b1.ToTable("NegociacaoParcelas", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("NegociacaoId");
+                        });
+
+                    b.Navigation("CobrancasOriginais");
+
+                    b.Navigation("Parcelas");
                 });
 #pragma warning restore 612, 618
         }
