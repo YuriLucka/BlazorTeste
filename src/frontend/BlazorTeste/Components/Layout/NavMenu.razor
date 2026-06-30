@@ -1,3 +1,6 @@
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
 <MudNavMenu Class="py-2">
     <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Dashboard">
         Dashboard
@@ -34,4 +37,34 @@
     <MudNavLink Href="/usuarios" Icon="@Icons.Material.Filled.People">
         Usuários
     </MudNavLink>
+
+    <MudDivider Class="my-2" />
+    <MudText Typo="Typo.overline" Class="px-4 pb-1" Color="Color.Secondary">Interações</MudText>
+
+    <MudNavLink Icon="@Icons.Material.Filled.NotificationsActive" OnClick="EnviarNotificacao">
+        Notificação
+    </MudNavLink>
 </MudNavMenu>
+
+@code {
+    private async Task EnviarNotificacao()
+    {
+        var result = await JS.InvokeAsync<string>(
+            "sinderpNotifications.requestAndNotify",
+            "SindERP",
+            "Notificação de teste do sistema sindical.",
+            "/favicon.png");
+
+        var msg = result switch
+        {
+            "granted"     => null,
+            "denied"      => "Notificações bloqueadas pelo navegador.",
+            "unsupported" => "Navegador não suporta notificações.",
+            _             => "Permissão não concedida."
+        };
+
+        if (msg != null)
+            Snackbar.Add(msg, Severity.Warning);
+    }
+}
+

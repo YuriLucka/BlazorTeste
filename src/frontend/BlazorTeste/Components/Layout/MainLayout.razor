@@ -3,6 +3,8 @@
 @inject TokenService TokenService
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject CobrancaService CobrancaService
+@inject IJSRuntime JS
 @implements IDisposable
 @using BlazorTeste.Services.Auth
 @using Microsoft.AspNetCore.Components.Authorization
@@ -169,9 +171,32 @@
     protected override async Task OnInitializedAsync()
     {
         AppState.OnChange += StateHasChanged;
+        Navigation.LocationChanged += OnLocationChanged;
         _authState = await AuthStateTask;
         if (_authState.User.Identity?.IsAuthenticated != true)
             Navigation.NavigateTo("/login", replace: true);
+        else
+            await AtualizarBadgeAsync();
+    }
+
+    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        await AtualizarBadgeAsync();
+    }
+
+    private async Task AtualizarBadgeAsync()
+    {
+        try
+        {
+            var vencidas = await CobrancaService.GetByStatusAsync(StatusCobranca.Vencido);
+            var pendentes = await CobrancaService.GetByStatusAsync(StatusCobranca.Pendente);
+            var total = vencidas.Count + pendentes.Count;
+            if (total > 0)
+                await JS.InvokeVoidAsync("sinderpBadge.set", total);
+            else
+                await JS.InvokeVoidAsync("sinderpBadge.clear");
+        }
+        catch { /* silencioso se API offline */ }
     }
 
     private async Task LogoutClick()
@@ -195,5 +220,7 @@
     public void Dispose()
     {
         AppState.OnChange -= StateHasChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
+        _ = JS.InvokeVoidAsync("sinderpBadge.clear");
     }
 }

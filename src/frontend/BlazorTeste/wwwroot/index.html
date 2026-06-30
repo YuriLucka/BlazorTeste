@@ -19,10 +19,29 @@
 </head>
 <body>
     <div id="app">
-        <div style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:Roboto,sans-serif;color:#888;">
-            Carregando SindERP...
+        <style>
+            .se-splash{display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;background:#F0F4FA;font-family:Roboto,system-ui,sans-serif;}
+            .se-splash__mark{width:64px;height:64px;border-radius:16px;background:#1565C0;display:flex;align-items:center;justify-content:center;margin-bottom:20px;box-shadow:0 4px 20px rgba(21,101,192,.28);}
+            .se-splash__wordmark{font-size:30px;font-weight:700;letter-spacing:-.5px;color:#1A3050;margin-bottom:10px;line-height:1;}
+            .se-splash__wordmark em{font-style:normal;color:#1565C0;}
+            .se-splash__tagline{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7A9CBF;margin-bottom:52px;}
+            .se-splash__track{width:160px;height:2px;background:#D4E2F0;border-radius:2px;overflow:hidden;position:relative;}
+            .se-splash__fill{position:absolute;top:0;left:0;height:100%;width:50%;background:#1565C0;border-radius:2px;animation:se-sweep 1.6s cubic-bezier(.4,0,.2,1) infinite;}
+            @keyframes se-sweep{0%{transform:translateX(-100%);width:50%;}60%{width:70%;}100%{transform:translateX(220%);width:50%;}}
+            @media(prefers-reduced-motion:reduce){.se-splash__fill{animation:none;width:100%;}}
+        </style>
+        <div class="se-splash">
+            <div class="se-splash__mark">
+                <svg viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+                    <text x="18" y="26" font-family="Roboto,sans-serif" font-size="26" font-weight="700" fill="white" text-anchor="middle" letter-spacing="-1">S</text>
+                </svg>
+            </div>
+            <div class="se-splash__wordmark">Sind<em>ERP</em></div>
+            <div class="se-splash__tagline">Sistema de Gestão Sindical</div>
+            <div class="se-splash__track"><div class="se-splash__fill"></div></div>
         </div>
     </div>
+    <script src="js/notifications.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
     <script>
