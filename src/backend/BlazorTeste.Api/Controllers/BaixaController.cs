@@ -20,4 +20,8 @@ public class BaixaController(IBaixaCobrancaAppService service) : ControllerBase
         var result = await service.BaixarAsync(cobrancaId, tipo);
         return Ok(result);
     }
+
+    [HttpPost("processar-arquivo")]
+    public async Task<ProcessarArquivoDto> ProcessarArquivo([FromQuery] int entidadeId) =>
+        await service.ProcessarArquivoAsync(entidadeId);
 }

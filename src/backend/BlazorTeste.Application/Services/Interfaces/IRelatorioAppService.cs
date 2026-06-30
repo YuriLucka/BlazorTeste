@@ -5,4 +5,5 @@ namespace BlazorTeste.Application.Services.Interfaces;
 public interface IRelatorioAppService
 {
     Task<IEnumerable<RelatorioDto>> GetAllAsync(int entidadeId);
+    Task<GerarRelatorioResultDto> GerarAsync(int id, GerarRelatorioRequest request);
 }

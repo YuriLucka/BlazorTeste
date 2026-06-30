@@ -24,4 +24,17 @@ public class RelatorioAppService : IRelatorioAppService
             Icone = r.Icone
         });
     }
+
+    public async Task<GerarRelatorioResultDto> GerarAsync(int id, GerarRelatorioRequest request)
+    {
+        var relatorio = await _repo.GetByIdAsync(id);
+        if (relatorio is null)
+            return new GerarRelatorioResultDto { Sucesso = false, Mensagem = "Relatório não encontrado." };
+
+        return new GerarRelatorioResultDto
+        {
+            Sucesso = true,
+            Mensagem = $"Relatório '{relatorio.Nome}' gerado com sucesso no formato {request.Formato}."
+        };
+    }
 }

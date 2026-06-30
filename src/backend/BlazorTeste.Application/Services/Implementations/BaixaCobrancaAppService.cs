@@ -85,4 +85,44 @@ public class BaixaCobrancaAppService : IBaixaCobrancaAppService
             Observacoes = registro.Observacoes
         };
     }
+
+    public async Task<ProcessarArquivoDto> ProcessarArquivoAsync(int entidadeId)
+    {
+        var vencidas = await _cobrancaRepo.GetVencidasAsync();
+        var pendentes = (entidadeId == 0 ? vencidas : vencidas.Where(c => c.EntidadeId == entidadeId))
+            .Take(15)
+            .ToList();
+
+        var agora = DateTime.UtcNow;
+        int baixadas = 0;
+
+        foreach (var cobranca in pendentes)
+        {
+            cobranca.Pagar(agora);
+            await _cobrancaRepo.UpdateAsync(cobranca);
+
+            var registro = new RegistroBaixa
+            {
+                EntidadeId = cobranca.EntidadeId,
+                CobrancaId = cobranca.Id,
+                RazaoSocialContribuinte = cobranca.RazaoSocialContribuinte,
+                TipoCobranca = cobranca.Tipo.ToString(),
+                ValorOriginal = cobranca.Valor,
+                ValorPago = cobranca.Valor + cobranca.Multa + cobranca.Juros,
+                DataPagamento = agora,
+                DataProcessamento = agora,
+                TipoBaixa = TipoBaixa.ArquivoRetorno,
+                OperadorResponsavel = "Sistema"
+            };
+            await _baixaRepo.AddAsync(registro);
+            baixadas++;
+        }
+
+        return new ProcessarArquivoDto
+        {
+            CobrancasBaixadas = baixadas,
+            Erros = 0,
+            Mensagem = $"Arquivo processado: {baixadas} cobranças baixadas, 0 erros."
+        };
+    }
 }

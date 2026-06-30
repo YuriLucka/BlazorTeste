@@ -13,4 +13,8 @@ public class RelatoriosController(IRelatorioAppService service) : ControllerBase
     [HttpGet]
     public async Task<IEnumerable<RelatorioDto>> GetAll([FromQuery] int entidadeId) =>
         await service.GetAllAsync(entidadeId);
+
+    [HttpPost("{id}/gerar")]
+    public async Task<GerarRelatorioResultDto> Gerar(int id, [FromBody] GerarRelatorioRequest request) =>
+        await service.GerarAsync(id, request);
 }
