@@ -121,7 +121,7 @@
             <MudNavGroup Title="Guia Sindical" Icon="@Icons.Material.Filled.MenuBook"
                          Expanded="@E("guia","Guia Sindical","Publicações","Categorias")"
                          ExpandedChanged="@(v => SE("guia", v))">
-                @if (S("Publicações"))  { <MudNavLink Href="/guiasindical">Publicações</MudNavLink> }
+                @if (S("Publicações"))  { <MudNavLink Href="/guia-sindical">Publicações</MudNavLink> }
                 @if (S("Categorias"))   { <MudNavLink Disabled="true">Categorias</MudNavLink> }
             </MudNavGroup>
         }
