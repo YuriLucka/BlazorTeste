@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arquitetura DDD — SindERP</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background: #FFFFFF;
+  color: #1E293B;
+  padding: 32px 32px 40px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── Header ── */
+.header { margin-bottom: 24px; display: flex; align-items: flex-end; justify-content: space-between; }
+.header h1 { font-size: 26px; font-weight: 800; color: #0F172A; letter-spacing: -0.5px; }
+.header .badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #64748B; background: #F1F5F9; border: 1px solid #E2E8F0;
+  border-radius: 20px; padding: 4px 12px;
+}
+hr { border: none; border-top: 1px solid #E2E8F0; margin-bottom: 24px; }
+
+/* ── Layout ── */
+.grid-main {
+  display: grid;
+  grid-template-columns: 1fr 310px;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+/* ── Onion wrapper ── */
+.onion-wrap {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 16px 12px 12px;
+}
+.onion-wrap svg { width: 100%; height: auto; display: block; }
+
+/* ── Right panel ── */
+.right-panel { display: flex; flex-direction: column; gap: 10px; }
+
+.layer-card { border-radius: 10px; border: 1.5px solid; overflow: hidden; }
+.layer-header {
+  padding: 8px 12px;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 700;
+}
+.layer-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.layer-body { padding: 9px 12px; font-size: 10.5px; line-height: 1.85; color: #475569; }
+.layer-body code {
+  font-family: 'Cascadia Code','Consolas',monospace;
+  font-size: 10px; background: rgba(0,0,0,0.05);
+  padding: 0 3px; border-radius: 3px; color: #334155;
+}
+
+/* ── Communication flow ── */
+.flow-section {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 20px 24px;
+}
+.flow-section h3 {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.1em; color: #94A3B8; margin-bottom: 18px;
+}
+
+.flow-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+.flow-label { font-size: 10px; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+
+.flow-chain {
+  display: flex; align-items: center; gap: 0; flex-wrap: nowrap; overflow-x: auto;
+}
+.fn { border-radius: 8px; border: 1.5px solid; padding: 7px 10px; font-size: 10px; font-weight: 600; white-space: nowrap; text-align: center; min-width: 80px; }
+.fn sub { display: block; font-size: 8.5px; font-weight: 400; margin-top: 1px; opacity: 0.75; }
+.fa { color: #94A3B8; font-size: 16px; padding: 0 4px; flex-shrink: 0; }
+
+/* Auth flow */
+.auth-steps { display: flex; flex-direction: column; gap: 8px; }
+.auth-step {
+  display: flex; align-items: flex-start; gap: 10px;
+  background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px;
+  padding: 8px 12px; font-size: 10.5px;
+}
+.auth-step-num {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #F59E0B; color: #78350F;
+  font-size: 9.5px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.auth-step-text { color: #475569; line-height: 1.5; }
+.auth-step-text strong { color: #0F172A; }
+.auth-step-text code { font-family: 'Cascadia Code','Consolas',monospace; font-size: 9.5px; background: #F1F5F9; padding: 0 3px; border-radius: 3px; }
+
+/* Rule note */
+.rule-note {
+  margin-top: 18px; padding: 10px 14px;
+  background: #FFFBEB; border: 1px solid #FDE68A; border-left: 3px solid #F59E0B;
+  border-radius: 8px; font-size: 10.5px; color: #78350F; line-height: 1.6;
+}
+.rule-note strong { color: #92400E; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>SindERP — Arquitetura DDD</h1>
+    <p style="color:#64748B;font-size:12px;margin-top:4px;">Domain-Driven Design · Clean Architecture · .NET 10 · Blazor WebAssembly</p>
+  </div>
+  <span class="badge">Apresentação de Arquitetura</span>
+</div>
+<hr>
+
+<div class="grid-main">
+
+  <!-- ════ ONION DIAGRAM ════ -->
+  <div class="onion-wrap">
+    <svg viewBox="0 0 580 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Light fills for each ring -->
+        <radialGradient id="gApi2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#D1FAE5" stop-opacity="0.7"/>
+          <stop offset="100%" stop-color="#A7F3D0" stop-opacity="0.3"/>
+        </radialGradient>
+        <radialGradient id="gInf2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#EDE9FE" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="#DDD6FE" stop-opacity="0.4"/>
+        </radialGradient>
+        <radialGradient id="gApp2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#DBEAFE" stop-opacity="0.9"/>
+          <stop offset="100%" stop-color="#BFDBFE" stop-opacity="0.5"/>
+        </radialGradient>
+        <radialGradient id="gDom2" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="#FEF9C3" stop-opacity="1"/>
+          <stop offset="100%" stop-color="#FEF08A" stop-opacity="0.8"/>
+        </radialGradient>
+
+        <!-- Arrow markers -->
+        <marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L0,8 L8,4 z" fill="#94A3B8"/>
+        </marker>
+        <marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L0,8 L8,4 z" fill="#EA580C"/>
+        </marker>
+        <marker id="a3" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
+          <path d="M0,0 L0,7 L7,3.5 z" fill="#94A3B8"/>
+        </marker>
+
+        <!-- Drop shadow for domain -->
+        <filter id="sh">
+          <feDropShadow dx="0" dy="2" stdDeviation="6" flood-color="#CA8A04" flood-opacity="0.25"/>
+        </filter>
+      </defs>
+
+      <!-- ══ BACKGROUND (light) ══ -->
+      <rect x="0" y="0" width="580" height="460" fill="#F8FAFC" rx="12"/>
+
+      <!-- ══ RINGS — center (230, 215) ══ -->
+      <!-- API -->
+      <ellipse cx="230" cy="215" rx="195" ry="158"
+        fill="url(#gApi2)" stroke="#059669" stroke-width="1.8" stroke-opacity="0.6"/>
+      <!-- Infra -->
+      <ellipse cx="230" cy="215" rx="152" ry="121"
+        fill="url(#gInf2)" stroke="#7C3AED" stroke-width="1.8" stroke-opacity="0.65"/>
+      <!-- Application -->
+      <ellipse cx="230" cy="215" rx="108" ry="85"
+        fill="url(#gApp2)" stroke="#2563EB" stroke-width="1.8" stroke-opacity="0.7"/>
+      <!-- Domain -->
+      <ellipse cx="230" cy="215" rx="60" ry="47"
+        fill="url(#gDom2)" stroke="#CA8A04" stroke-width="2.5" filter="url(#sh)"/>
+
+      <!-- ══ LABELS ══ -->
+
+      <!-- Domain -->
+      <text x="230" y="207" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="14" font-weight="800" fill="#78350F">Domain</text>
+      <text x="230" y="220" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#92400E">Entities · Enums</text>
+      <text x="230" y="231" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#92400E">Interfaces · Business Rules</text>
+
+      <!-- Application — TOP donut -->
+      <!-- App top: 215-85=130. Domain top: 215-47=168. Mid ≈ 143 -->
+      <text x="230" y="141" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="12" font-weight="700" fill="#1E40AF">Application</text>
+      <text x="230" y="153" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#1D4ED8">AppServices · DTOs · IServices</text>
+
+      <!-- Infrastructure — LEFT donut -->
+      <!-- Infra left: 230-152=78. App left: 230-108=122. Mid x ≈ 93, y=215 -->
+      <text x="88" y="207" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="11" font-weight="700" fill="#5B21B6">Infrastructure</text>
+      <text x="88" y="219" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#6D28D9">EF Core · Repos</text>
+      <text x="88" y="230" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#6D28D9">SQL Server</text>
+
+      <!-- API — BOTTOM donut -->
+      <!-- API bottom: 215+158=373. Infra bottom: 215+121=336. Mid ≈ 352 -->
+      <text x="230" y="350" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="12" font-weight="700" fill="#065F46">API Layer</text>
+      <text x="230" y="362" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#047857">Controllers · JWT Auth · Swagger</text>
+
+      <!-- ══ DEPENDENCY ARROWS (pointing INWARD) ══ -->
+      <!-- App → Domain: downward at x=230 -->
+      <line x1="230" y1="129" x2="230" y2="169"
+        stroke="#94A3B8" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#a1)"/>
+      <text x="244" y="151"
+        font-family="Segoe UI,sans-serif" font-size="7.5" fill="#94A3B8">depende</text>
+
+      <!-- Infra → Domain: rightward at y=215 -->
+      <line x1="76" y1="215" x2="171" y2="215"
+        stroke="#94A3B8" stroke-width="1.4" stroke-dasharray="5,3" marker-end="url(#a1)"/>
+
+      <!-- DIP badge -->
+      <rect x="44" y="235" width="118" height="14" rx="3"
+        fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="103" y="246" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="7.5" fill="#94A3B8" font-style="italic">implements IRepository</text>
+
+      <!-- ══ RING SIZE RULERS ══ -->
+      <!-- Small tick labels on the horizontal axis (right side) -->
+      <text x="290" y="211" font-family="Segoe UI,sans-serif" font-size="7.5" fill="#CA8A04" opacity="0.9">Dom</text>
+      <text x="338" y="211" font-family="Segoe UI,sans-serif" font-size="7.5" fill="#2563EB" opacity="0.9">App</text>
+      <text x="382" y="211" font-family="Segoe UI,sans-serif" font-size="7.5" fill="#7C3AED" opacity="0.9">Infra</text>
+      <text x="425" y="211" font-family="Segoe UI,sans-serif" font-size="7.5" fill="#059669" opacity="0.9">API</text>
+      <!-- tick lines -->
+      <line x1="290" y1="214" x2="290" y2="222" stroke="#CA8A04" stroke-width="0.8" opacity="0.5"/>
+      <line x1="338" y1="214" x2="338" y2="222" stroke="#2563EB" stroke-width="0.8" opacity="0.5"/>
+      <line x1="382" y1="214" x2="382" y2="222" stroke="#7C3AED" stroke-width="0.8" opacity="0.5"/>
+      <line x1="425" y1="214" x2="425" y2="222" stroke="#059669" stroke-width="0.8" opacity="0.5"/>
+
+      <!-- ══ BLAZOR WASM BOX ══ -->
+      <!-- Box: x=446, y=65, w=120, h=108 -->
+      <rect x="448" y="68" width="122" height="108" rx="10"
+        fill="#FFF7ED" stroke="#EA580C" stroke-width="1.8"/>
+      <!-- Header stripe -->
+      <rect x="448" y="68" width="122" height="26" rx="10" fill="#FED7AA" fill-opacity="0.6"/>
+      <rect x="448" y="82" width="122" height="12" fill="#FED7AA" fill-opacity="0.6"/>
+
+      <text x="509" y="85" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="11" font-weight="800" fill="#C2410C">Blazor WASM</text>
+      <text x="509" y="104" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#9A3412">Pages · Components</text>
+      <text x="509" y="115" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#9A3412">Services · TokenService</text>
+      <text x="509" y="126" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#9A3412">MudBlazor 6</text>
+      <text x="509" y="141" text-anchor="middle"
+        font-family="Cascadia Code,Consolas,monospace" font-size="7.5" fill="#C2410C">src/frontend/</text>
+      <text x="509" y="153" text-anchor="middle"
+        font-family="Cascadia Code,Consolas,monospace" font-size="7.5" fill="#EA580C">localhost:5233</text>
+
+      <!-- HTTP Arrow: Blazor left edge → API ring right edge -->
+      <!-- Blazor left: x=448, y=122. API right: x=425, y=215 -->
+      <path d="M 448 122 Q 435 170 428 215"
+        fill="none" stroke="#EA580C" stroke-width="1.8" stroke-dasharray="7,4" marker-end="url(#a2)"/>
+      <text x="447" y="163" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8.5" fill="#EA580C">HTTP/JSON</text>
+      <text x="447" y="174" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8" fill="#9A3412">JWT Bearer</text>
+
+      <!-- "API also refs" note -->
+      <text x="395" y="90" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8" fill="#047857" opacity="0.8">API refs</text>
+      <text x="395" y="101" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8" fill="#047857" opacity="0.8">Application +</text>
+      <text x="395" y="112" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8" fill="#047857" opacity="0.8">Infrastructure</text>
+
+      <!-- ══ TEST BOXES ══ -->
+      <!-- Domain.Tests -->
+      <rect x="20" y="390" width="140" height="58" rx="8"
+        fill="#FAFAFA" stroke="#CBD5E1" stroke-width="1.4" stroke-dasharray="6,3"/>
+      <text x="90" y="408" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="9.5" font-weight="700" fill="#475569">Domain.Tests</text>
+      <text x="90" y="420" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8" fill="#94A3B8">xUnit · FluentAssertions</text>
+      <text x="90" y="431" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8" fill="#94A3B8">CobrancaTests · ProcessoTests</text>
+      <text x="90" y="443" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="9" font-weight="700" fill="#CA8A04">10 testes ✓</text>
+
+      <!-- Application.Tests -->
+      <rect x="168" y="390" width="155" height="58" rx="8"
+        fill="#FAFAFA" stroke="#CBD5E1" stroke-width="1.4" stroke-dasharray="6,3"/>
+      <text x="245" y="408" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="9.5" font-weight="700" fill="#475569">Application.Tests</text>
+      <text x="245" y="420" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8" fill="#94A3B8">xUnit · NSubstitute 5</text>
+      <text x="245" y="431" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="8" fill="#94A3B8">CobrancaAppService · Juridico</text>
+      <text x="245" y="443" text-anchor="middle"
+        font-family="Segoe UI,sans-serif" font-size="9" font-weight="700" fill="#2563EB">14 testes ✓</text>
+
+      <!-- Test → layer arrows -->
+      <line x1="105" y1="390" x2="187" y2="265"
+        stroke="#CBD5E1" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#a3)"/>
+      <line x1="240" y1="390" x2="235" y2="302"
+        stroke="#CBD5E1" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#a3)"/>
+
+      <!-- tests/ labels -->
+      <text x="90"  y="458" text-anchor="middle" font-family="Cascadia Code,Consolas,monospace" font-size="7" fill="#CBD5E1">tests/</text>
+      <text x="245" y="458" text-anchor="middle" font-family="Cascadia Code,Consolas,monospace" font-size="7" fill="#CBD5E1">tests/</text>
+
+    </svg>
+
+    <!-- Rule note inside onion wrap -->
+    <div style="margin-top:10px;background:#FFFBEB;border:1px solid #FDE68A;border-left:3px solid #F59E0B;border-radius:8px;padding:9px 14px;font-size:10.5px;color:#78350F;line-height:1.6;">
+      <strong>Regra de Dependência:</strong> setas apontam sempre para o <strong>Domain</strong> (centro).
+      <strong>Infrastructure</strong> implementa as <em style="font-style:normal;color:#7C3AED;">interfaces</em> declaradas no Domain — nunca o contrário. <strong>Blazor WASM</strong> nunca acessa Domain ou Application diretamente; apenas consome a API via HTTP.
+    </div>
+  </div>
+
+  <!-- ════ RIGHT PANEL ════ -->
+  <div class="right-panel">
+
+    <!-- Domain -->
+    <div class="layer-card" style="border-color:#CA8A04;background:#FFFBEB;">
+      <div class="layer-header" style="background:#FEF9C3;">
+        <div class="layer-dot" style="background:#CA8A04;"></div>
+        <span style="color:#78350F;">Domain</span>
+        <span style="margin-left:auto;font-size:9px;color:#92400E;font-weight:400;">src/backend/BlazorTeste.Domain</span>
+      </div>
+      <div class="layer-body">
+        <code>Entities/Cobranca.cs</code> → <em>Pagar(), Vencer()</em><br>
+        <code>Entities/Processo.cs</code> → <em>Encerrar(), Suspender()</em><br>
+        <code>Entities/Contribuinte.cs</code><br>
+        <code>Entities/Audiencia.cs</code> · <code>Advogado.cs</code><br>
+        <code>Enums/StatusCobranca.cs</code> · <code>TipoCobranca.cs</code><br>
+        <code>Interfaces/ICobrancaRepository</code><br>
+        <code>Interfaces/IProcessoRepository</code>
+      </div>
+    </div>
+
+    <!-- Application -->
+    <div class="layer-card" style="border-color:#2563EB;background:#EFF6FF;">
+      <div class="layer-header" style="background:#DBEAFE;">
+        <div class="layer-dot" style="background:#2563EB;"></div>
+        <span style="color:#1E40AF;">Application</span>
+        <span style="margin-left:auto;font-size:9px;color:#1D4ED8;font-weight:400;">src/backend/BlazorTeste.Application</span>
+      </div>
+      <div class="layer-body">
+        <code>Services/CobrancaAppService.cs</code><br>
+        <code>Services/JuridicoAppService.cs</code><br>
+        <code>Services/FinanceiroAppService.cs</code><br>
+        <code>Services/EventoAppService.cs</code><br>
+        <code>Services/GuiaSindicalAppService.cs</code><br>
+        <code>DTOs/CobrancaDto.cs</code> · <code>ProcessoDto.cs</code><br>
+        <code>Interfaces/ICobrancaAppService</code>
+      </div>
+    </div>
+
+    <!-- Infrastructure -->
+    <div class="layer-card" style="border-color:#7C3AED;background:#F5F3FF;">
+      <div class="layer-header" style="background:#EDE9FE;">
+        <div class="layer-dot" style="background:#7C3AED;"></div>
+        <span style="color:#5B21B6;">Infrastructure</span>
+        <span style="margin-left:auto;font-size:9px;color:#6D28D9;font-weight:400;">src/backend/BlazorTeste.Infrastructure</span>
+      </div>
+      <div class="layer-body">
+        <code>Data/AppDbContext.cs</code> (EF Core 10)<br>
+        <code>Repositories/CobrancaRepository.cs</code><br>
+        <code>Repositories/ProcessoRepository.cs</code><br>
+        <code>Migrations/</code> (schema SQL Server)<br>
+        <code>DependencyInjection.cs</code><br>
+        <span style="color:#7C3AED;font-size:9.5px;">→ depende <strong>só</strong> do Domain</span>
+      </div>
+    </div>
+
+    <!-- API -->
+    <div class="layer-card" style="border-color:#059669;background:#ECFDF5;">
+      <div class="layer-header" style="background:#D1FAE5;">
+        <div class="layer-dot" style="background:#059669;"></div>
+        <span style="color:#065F46;">API</span>
+        <span style="margin-left:auto;font-size:9px;color:#047857;font-weight:400;">src/backend/BlazorTeste.Api · :7247</span>
+      </div>
+      <div class="layer-body">
+        <code>Controllers/CobrancaController.cs</code><br>
+        <code>Controllers/JuridicoController.cs</code><br>
+        <code>Controllers/FinanceiroController.cs</code><br>
+        <code>Controllers/AuthController.cs</code><br>
+        <code>Models/Auth.cs</code> (LoginRequest/Response)<br>
+        <code>Program.cs</code> (DI · JWT · CORS · Swagger)
+      </div>
+    </div>
+
+    <!-- Frontend -->
+    <div class="layer-card" style="border-color:#EA580C;background:#FFF7ED;">
+      <div class="layer-header" style="background:#FED7AA;">
+        <div class="layer-dot" style="background:#EA580C;"></div>
+        <span style="color:#9A3412;">Blazor WASM</span>
+        <span style="margin-left:auto;font-size:9px;color:#C2410C;font-weight:400;">src/frontend/ · localhost:5233</span>
+      </div>
+      <div class="layer-body">
+        <code>Services/CobrancaService.cs</code><br>
+        <code>Services/FinanceiroService.cs</code><br>
+        <code>Services/TokenService.cs</code> (JWT + refresh)<br>
+        <code>Services/AuthService.cs</code><br>
+        <code>Pages/Dashboard.razor</code><br>
+        <code>Pages/Cobrancas.razor</code> · <code>Juridico.razor</code><br>
+        <code>Dialogs/</code> · <code>Shared/MainLayout.razor</code>
+      </div>
+    </div>
+
+    <!-- Folder Structure -->
+    <div class="layer-card" style="border-color:#CBD5E1;background:#F8FAFC;">
+      <div class="layer-header" style="background:#F1F5F9;">
+        <div class="layer-dot" style="background:#64748B;"></div>
+        <span style="color:#334155;">Estrutura de Pastas</span>
+        <span style="margin-left:auto;font-size:9px;color:#94A3B8;font-weight:400;">BlazorTeste.slnx</span>
+      </div>
+      <div class="layer-body" style="font-family:'Cascadia Code','Consolas',monospace;font-size:10px;line-height:2;color:#334155;">
+        <span style="color:#94A3B8;">📁 </span><span style="color:#2563EB;font-weight:700;">src/</span><br>
+        <span style="color:#94A3B8;">&nbsp;&nbsp;├─ </span><span style="color:#475569;font-weight:600;">backend/</span><br>
+        <span style="color:#94A3B8;">&nbsp;&nbsp;│&nbsp;&nbsp;├─ </span><span style="color:#CA8A04;">BlazorTeste.Domain/</span><br>
+        <span style="color:#94A3B8;">&nbsp;&nbsp;│&nbsp;&nbsp;├─ </span><span style="color:#2563EB;">BlazorTeste.Application/</span><br>
+        <span style="color:#94A3B8;">&nbsp;&nbsp;│&nbsp;&nbsp;├─ </span><span style="color:#7C3AED;">BlazorTeste.Infrastructure/</span><br>
+        <span style="color:#94A3B8;">&nbsp;&nbsp;│&nbsp;&nbsp;└─ </span><span style="color:#059669;">BlazorTeste.Api/</span><br>
+        <span style="color:#94A3B8;">&nbsp;&nbsp;└─ </span><span style="color:#475569;font-weight:600;">frontend/</span><br>
+        <span style="color:#94A3B8;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└─ </span><span style="color:#EA580C;">BlazorTeste/</span> <span style="color:#94A3B8;font-size:9px;">(WASM)</span><br>
+        <span style="color:#94A3B8;">📁 </span><span style="color:#2563EB;font-weight:700;">tests/</span><br>
+        <span style="color:#94A3B8;">&nbsp;&nbsp;├─ </span><span style="color:#64748B;">BlazorTeste.Domain.Tests/</span><br>
+        <span style="color:#94A3B8;">&nbsp;&nbsp;└─ </span><span style="color:#64748B;">BlazorTeste.Application.Tests/</span><br>
+        <span style="color:#94A3B8;">📄 </span><span style="color:#94A3B8;">BlazorTeste.slnx</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ COMMUNICATION FLOW ════ -->
+<div class="flow-section">
+  <h3>Fluxo de Comunicação — Frontend ↔ Backend</h3>
+
+  <div class="flow-grid">
+
+    <!-- Request flow -->
+    <div>
+      <div class="flow-label">Requisição (dados)</div>
+      <div class="flow-chain">
+        <div class="fn" style="border-color:#EA580C;background:#FFF7ED;color:#9A3412;">
+          Razor Page<br><sub>OnInitializedAsync</sub>
+        </div>
+        <span class="fa">→</span>
+        <div class="fn" style="border-color:#EA580C;background:#FFF7ED;color:#9A3412;">
+          XxxService.cs<br><sub>GetAllAsync()</sub>
+        </div>
+        <span class="fa">→</span>
+        <div class="fn" style="border-color:#94A3B8;background:#F8FAFC;color:#475569;">
+          HttpClient<br><sub>Authorization: Bearer</sub>
+        </div>
+        <span class="fa">→</span>
+        <div class="fn" style="border-color:#059669;background:#ECFDF5;color:#065F46;">
+          API Controller<br><sub>GET /api/cobrancas</sub>
+        </div>
+        <span class="fa">→</span>
+        <div class="fn" style="border-color:#2563EB;background:#EFF6FF;color:#1E40AF;">
+          AppService<br><sub>GetAllAsync(entId)</sub>
+        </div>
+        <span class="fa">→</span>
+        <div class="fn" style="border-color:#7C3AED;background:#F5F3FF;color:#5B21B6;">
+          Repository<br><sub>EF Core Query</sub>
+        </div>
+        <span class="fa">→</span>
+        <div class="fn" style="border-color:#94A3B8;background:#F8FAFC;color:#475569;">
+          SQL Server<br><sub>SELECT</sub>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:9.5px;color:#94A3B8;">
+        ← Retorno: JSON → List&lt;CobrancaDto&gt; → StateHasChanged() → re-render
+      </div>
+    </div>
+
+    <!-- Auth flow -->
+    <div>
+      <div class="flow-label">Fluxo de Autenticação JWT</div>
+      <div class="auth-steps">
+        <div class="auth-step">
+          <div class="auth-step-num">1</div>
+          <div class="auth-step-text"><strong>Login:</strong> POST <code>/api/auth/login</code> → retorna <code>{ accessToken, nome, email }</code>. API define cookie HttpOnly com refresh token.</div>
+        </div>
+        <div class="auth-step">
+          <div class="auth-step-num">2</div>
+          <div class="auth-step-text"><strong>Token em memória:</strong> <code>TokenService</code> armazena JWT em memória (não localStorage). Cada requisição injeta <code>Authorization: Bearer {jwt}</code>.</div>
+        </div>
+        <div class="auth-step">
+          <div class="auth-step-num">3</div>
+          <div class="auth-step-text"><strong>Refresh automático:</strong> ao carregar app ou receber 401, <code>TokenService</code> chama POST <code>/api/auth/refresh</code> usando cookie. Novo JWT emitido sem re-login.</div>
+        </div>
+        <div class="auth-step">
+          <div class="auth-step-num">4</div>
+          <div class="auth-step-text"><strong>Logout:</strong> POST <code>/api/auth/logout</code> → API revoga cookie. Frontend limpa <code>EntidadeAtiva</code> e redireciona para <code>/login</code>.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="rule-note" style="margin-top:18px;">
+    <strong>Isolamento de camadas:</strong> o Blazor WASM nunca acessa diretamente EF Core, SQL Server ou classes de Domain/Application. Todo acesso é via API REST com JWT. A API valida o token em cada requisição antes de acionar os AppServices.
+  </div>
+</div>
+
+</body>
+</html>
