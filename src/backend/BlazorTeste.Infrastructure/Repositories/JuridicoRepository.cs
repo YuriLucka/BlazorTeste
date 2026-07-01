@@ -22,16 +22,6 @@ public class JuridicoRepository : BaseRepository<Processo>, IJuridicoRepository
     public async Task<IReadOnlyList<Advogado>> GetAllAdvogadosAsync(CancellationToken cancellationToken = default)
         => await _context.Advogados.ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<Audiencia>> GetAudienciasByProcessoAsync(int processoId, CancellationToken cancellationToken = default)
-        => await _context.Audiencias
-            .Where(a => a.ProcessoId == processoId)
-            .ToListAsync(cancellationToken);
-
-    public async Task<IReadOnlyList<Audiencia>> GetAudienciasPorPeriodoAsync(DateTime inicio, DateTime fim, CancellationToken cancellationToken = default)
-        => await _context.Audiencias
-            .Where(a => a.DataHora >= inicio && a.DataHora <= fim)
-            .ToListAsync(cancellationToken);
-
     public async Task<IReadOnlyList<Audiencia>> GetAllAudienciasAsync(CancellationToken cancellationToken = default)
         => await _context.Audiencias.ToListAsync(cancellationToken);
 }

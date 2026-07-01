@@ -18,9 +18,4 @@ public class BaixaCobrancaRepository : BaseRepository<RegistroBaixa>, IBaixaCobr
         => await _dbSet
             .Where(r => r.CobrancaId == cobrancaId)
             .ToListAsync(cancellationToken);
-
-    public async Task<IReadOnlyList<RegistroBaixa>> GetByPeriodoAsync(DateTime inicio, DateTime fim, CancellationToken cancellationToken = default)
-        => await _dbSet
-            .Where(r => r.DataPagamento >= inicio && r.DataPagamento <= fim)
-            .ToListAsync(cancellationToken);
 }

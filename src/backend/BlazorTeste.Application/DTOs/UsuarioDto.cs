@@ -1,5 +1,3 @@
-using BlazorTeste.Domain.Entities;
-
 namespace BlazorTeste.Application.DTOs;
 
 public class UsuarioDto
@@ -8,5 +6,5 @@ public class UsuarioDto
     public string Nome { get; set; } = "";
     public string Email { get; set; } = "";
     public DateTime UltimoAcesso { get; set; }
-    public List<PermissaoEntidade> Permissoes { get; set; } = new();
+    public List<PermissaoEntidadeDto> Permissoes { get; set; } = new();
 }
