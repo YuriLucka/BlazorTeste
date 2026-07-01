@@ -1,11 +1,15 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using BlazorTeste.Api.Filters;
+using BlazorTeste.Api.Validators;
 using BlazorTeste.Application.Security;
 using BlazorTeste.Application.Services.Implementations;
 using BlazorTeste.Application.Services.Interfaces;
+using BlazorTeste.Application.Validators;
 using BlazorTeste.Infrastructure;
 using BlazorTeste.Infrastructure.Data;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
@@ -29,6 +33,9 @@ builder.Services.AddScoped<IConfiguracaoAppService, ConfiguracaoAppService>();
 builder.Services.AddScoped<IAuthAppService, AuthAppService>();
 builder.Services.AddScoped<IUsuarioAppService, UsuarioAppService>();
 builder.Services.AddScoped<IMailingAppService, MailingAppService>();
+
+builder.Services.AddValidatorsFromAssemblyContaining<GerarRelatorioRequestValidator>();
+builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -60,7 +67,7 @@ builder.Services.AddCors(opt =>
         .AllowAnyHeader()
         .AllowCredentials()));
 
-builder.Services.AddControllers().AddJsonOptions(opt =>
+builder.Services.AddControllers(opt => opt.Filters.Add<FluentValidationFilter>()).AddJsonOptions(opt =>
 {
     opt.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     opt.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
