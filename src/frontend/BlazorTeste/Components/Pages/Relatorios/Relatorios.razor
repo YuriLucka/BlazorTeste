@@ -184,11 +184,22 @@
         };
         var result = await RelatorioService.GerarAsync(_selectedRel.Id, request);
         _gerando = false;
-        _drawerOpen = false;
-        if (result?.Sucesso == true)
+
+        if (result.Sucesso)
+        {
+            _drawerOpen = false;
             Snackbar.Add(result.Mensagem, Severity.Success);
+        }
+        else if (result.Erros.Count > 0)
+        {
+            foreach (var erro in result.Erros)
+                Snackbar.Add(erro, Severity.Warning);
+        }
         else
-            Snackbar.Add("Erro ao gerar relatório.", Severity.Error);
+        {
+            _drawerOpen = false;
+            Snackbar.Add(result.Mensagem, Severity.Error);
+        }
     }
 
     private string GetCatLabel(string cat) => cat switch
