@@ -25,6 +25,9 @@ builder.Services.AddScoped<INegociacaoAppService, NegociacaoAppService>();
 builder.Services.AddScoped<IBaixaCobrancaAppService, BaixaCobrancaAppService>();
 builder.Services.AddScoped<IRelatorioAppService, RelatorioAppService>();
 builder.Services.AddScoped<IConfiguracaoAppService, ConfiguracaoAppService>();
+builder.Services.AddScoped<IAuthAppService, AuthAppService>();
+builder.Services.AddScoped<IUsuarioAppService, UsuarioAppService>();
+builder.Services.AddScoped<IMailingAppService, MailingAppService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>

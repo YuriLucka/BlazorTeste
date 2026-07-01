@@ -1,25 +1,23 @@
-using BlazorTeste.Domain.Entities;
-using BlazorTeste.Infrastructure.Data;
+using BlazorTeste.Application.DTOs;
+using BlazorTeste.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BlazorTeste.Api.Controllers;
 
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class UsuariosController(AppDbContext db) : ControllerBase
+public class UsuariosController(IUsuarioAppService service) : ControllerBase
 {
     [HttpGet]
-    public async Task<List<Usuario>> GetAll() =>
-        await db.Usuarios.ToListAsync();
+    public async Task<IEnumerable<UsuarioDto>> GetAll() =>
+        await service.GetAllAsync();
 
     [HttpGet("by-email")]
-    public async Task<ActionResult<Usuario>> GetByEmail([FromQuery] string email)
+    public async Task<ActionResult<UsuarioDto>> GetByEmail([FromQuery] string email)
     {
-        var u = await db.Usuarios.FirstOrDefaultAsync(u =>
-            u.Email.ToLower() == email.ToLower());
+        var u = await service.GetByEmailAsync(email);
         return u is null ? NotFound() : Ok(u);
     }
 }

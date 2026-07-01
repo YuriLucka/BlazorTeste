@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BlazorTeste.Domain\BlazorTeste.Domain.csproj" />
+    <ProjectReference Include="..\BlazorTeste.Application\BlazorTeste.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

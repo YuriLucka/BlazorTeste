@@ -1,17 +1,42 @@
 using BlazorTeste.Application.DTOs;
 using BlazorTeste.Application.Services.Interfaces;
+using BlazorTeste.Domain.Entities;
+using BlazorTeste.Domain.Interfaces.Repositories;
 
 namespace BlazorTeste.Application.Services.Implementations;
 
-/// <summary>
-/// Placeholder implementation — ConfiguracaoEntidade has no dedicated domain repository.
-/// Replace with a proper repository injection when available.
-/// </summary>
-public class ConfiguracaoAppService : IConfiguracaoAppService
+public class ConfiguracaoAppService(IConfiguracaoRepository repo) : IConfiguracaoAppService
 {
-    public Task<ConfiguracaoBancoDto?> GetBancoAsync(int entidadeId)
+    public async Task<ConfiguracaoBancoDto?> GetBancoAsync(int entidadeId)
     {
-        // TODO: inject a repository or HTTP client once the infrastructure layer exposes one
-        return Task.FromResult<ConfiguracaoBancoDto?>(new ConfiguracaoBancoDto());
+        var config = await repo.GetByEntidadeAsync(entidadeId);
+        if (config is null) return null;
+        return new ConfiguracaoBancoDto
+        {
+            Banco = config.Banco.Banco,
+            Agencia = config.Banco.Agencia,
+            Conta = config.Banco.Conta,
+            Cedente = config.Banco.Cedente,
+            CodigoCedente = config.Banco.CodigoCedente,
+            Carteira = config.Banco.Carteira
+        };
+    }
+
+    public async Task<ConfiguracaoGeral?> GetGeralAsync(int entidadeId)
+    {
+        var config = await repo.GetByEntidadeAsync(entidadeId);
+        return config?.Geral;
+    }
+
+    public async Task<ConfiguracaoCobranca?> GetCobrancaAsync(int entidadeId)
+    {
+        var config = await repo.GetByEntidadeAsync(entidadeId);
+        return config?.Cobranca;
+    }
+
+    public async Task<ConfiguracaoEmail?> GetEmailAsync(int entidadeId)
+    {
+        var config = await repo.GetByEntidadeAsync(entidadeId);
+        return config?.Email;
     }
 }

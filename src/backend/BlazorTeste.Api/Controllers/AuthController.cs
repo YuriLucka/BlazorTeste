@@ -1,39 +1,27 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
-using BlazorTeste.Infrastructure.Security;
-using BlazorTeste.Infrastructure.Data;
 using BlazorTeste.Api.Models;
-using Usuario = BlazorTeste.Domain.Entities.Usuario;
+using BlazorTeste.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
 namespace BlazorTeste.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public class AuthController(AppDbContext db, IConfiguration config) : ControllerBase
+public class AuthController(IAuthAppService authService) : ControllerBase
 {
     private const string CookieName = "refreshToken";
 
     [HttpPost("login")]
     public async Task<ActionResult<LoginResponse>> Login([FromBody] LoginRequest req)
     {
-        var user = await db.Usuarios
-            .FirstOrDefaultAsync(u => u.Email.ToLower() == req.Email.ToLower());
+        var result = await authService.LoginAsync(req.Email, req.Senha);
+        if (result is null) return Unauthorized("E-mail ou senha inválidos.");
 
-        if (user is null || !PasswordHelper.Verify(req.Senha, user.SenhaHash))
-            return Unauthorized("E-mail ou senha inválidos.");
-
-        user.UltimoAcesso = DateTime.UtcNow;
-        await SetRefreshTokenAsync(user);
+        SetRefreshCookie(result.RefreshToken, result.RefreshTokenExpiry);
         return Ok(new LoginResponse
         {
-            AccessToken = GenerateAccessToken(user),
-            Nome = user.Nome,
-            Email = user.Email
+            AccessToken = result.AccessToken,
+            Nome = result.Nome,
+            Email = result.Email
         });
     }
 
@@ -43,17 +31,15 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
         var cookie = Request.Cookies[CookieName];
         if (string.IsNullOrEmpty(cookie)) return Unauthorized();
 
-        var user = await db.Usuarios.FirstOrDefaultAsync(u =>
-            u.RefreshToken == cookie && u.RefreshTokenExpiry > DateTime.UtcNow);
+        var result = await authService.RefreshAsync(cookie);
+        if (result is null) return Unauthorized();
 
-        if (user is null) return Unauthorized();
-
-        await SetRefreshTokenAsync(user);
+        SetRefreshCookie(result.RefreshToken, result.RefreshTokenExpiry);
         return Ok(new LoginResponse
         {
-            AccessToken = GenerateAccessToken(user),
-            Nome = user.Nome,
-            Email = user.Email
+            AccessToken = result.AccessToken,
+            Nome = result.Nome,
+            Email = result.Email
         });
     }
 
@@ -62,15 +48,8 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
     {
         var cookie = Request.Cookies[CookieName];
         if (!string.IsNullOrEmpty(cookie))
-        {
-            var user = await db.Usuarios.FirstOrDefaultAsync(u => u.RefreshToken == cookie);
-            if (user is not null)
-            {
-                user.RefreshToken = null;
-                user.RefreshTokenExpiry = null;
-                await db.SaveChangesAsync();
-            }
-        }
+            await authService.LogoutAsync(cookie);
+
         var isHttps = Request.IsHttps;
         Response.Cookies.Delete(CookieName, new CookieOptions
         {
@@ -81,13 +60,8 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
         return NoContent();
     }
 
-    private async Task SetRefreshTokenAsync(Usuario user)
+    private void SetRefreshCookie(string token, DateTime expiry)
     {
-        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
-        var expiry = DateTime.UtcNow.AddDays(config.GetValue<int>("Jwt:RefreshTokenExpiryDays"));
-        user.RefreshToken = token;
-        user.RefreshTokenExpiry = expiry;
-        await db.SaveChangesAsync();
         var isHttps = Request.IsHttps;
         Response.Cookies.Append(CookieName, token, new CookieOptions
         {
@@ -96,25 +70,5 @@ public class AuthController(AppDbContext db, IConfiguration config) : Controller
             SameSite = isHttps ? SameSiteMode.None : SameSiteMode.Lax,
             Expires = expiry
         });
-    }
-
-    private string GenerateAccessToken(Usuario user)
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Key"]!));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim("name", user.Nome),
-            new Claim("permissoes", System.Text.Json.JsonSerializer.Serialize(user.Permissoes))
-        };
-        var token = new JwtSecurityToken(
-            issuer: config["Jwt:Issuer"],
-            audience: config["Jwt:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(config.GetValue<int>("Jwt:AccessTokenExpiryMinutes")),
-            signingCredentials: creds);
-        return new JwtSecurityTokenHandler().WriteToken(token);
     }
 }

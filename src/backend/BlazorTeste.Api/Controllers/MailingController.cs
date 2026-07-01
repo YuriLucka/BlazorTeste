@@ -1,17 +1,16 @@
-using BlazorTeste.Domain.Entities;
-using BlazorTeste.Infrastructure.Data;
+using BlazorTeste.Application.DTOs;
+using BlazorTeste.Application.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BlazorTeste.Api.Controllers;
 
 [Authorize]
 [ApiController]
 [Route("api/[controller]")]
-public class MailingController(AppDbContext db) : ControllerBase
+public class MailingController(IMailingAppService service) : ControllerBase
 {
     [HttpGet]
-    public async Task<List<Campanha>> GetAll() =>
-        await db.Campanhas.ToListAsync();
+    public async Task<IEnumerable<CampanhaDto>> GetAll() =>
+        await service.GetAllAsync();
 }
