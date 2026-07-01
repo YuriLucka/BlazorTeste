@@ -5,7 +5,7 @@ namespace BlazorTeste.Application.Validators;
 
 public class GerarRelatorioRequestValidator : AbstractValidator<GerarRelatorioRequest>
 {
-    private static readonly string[] FormatosValidos = ["PDF", "XLSX", "CSV"];
+    private static readonly string[] FormatosValidos = ["PDF", "EXCEL"];
 
     public GerarRelatorioRequestValidator()
     {

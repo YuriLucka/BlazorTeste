@@ -12,8 +12,8 @@ public class GerarRelatorioRequestValidatorTests
 
     [Theory]
     [InlineData("PDF")]
-    [InlineData("xlsx")]
-    [InlineData("Csv")]
+    [InlineData("excel")]
+    [InlineData("Excel")]
     public void Validate_FormatoValido_NaoRetornaErro(string formato)
     {
         var request = new GerarRelatorioRequest { Formato = formato };
