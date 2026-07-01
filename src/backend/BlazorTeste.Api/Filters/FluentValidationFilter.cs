@@ -25,7 +25,9 @@ public class FluentValidationFilter : IAsyncActionFilter
 
         if (!context.ModelState.IsValid)
         {
-            context.Result = new BadRequestObjectResult(new ValidationProblemDetails(context.ModelState));
+            var problemResult = new BadRequestObjectResult(new ValidationProblemDetails(context.ModelState));
+            problemResult.ContentTypes.Add("application/problem+json");
+            context.Result = problemResult;
             return;
         }
 
