@@ -1,12 +1,12 @@
+using BlazorTeste.Application.Security;
 using BlazorTeste.Domain.Entities;
 using BlazorTeste.Domain.Enums;
-using BlazorTeste.Infrastructure.Security;
 
 namespace BlazorTeste.Infrastructure.Data;
 
 public static class SeedData
 {
-    public static void Initialize(AppDbContext db)
+    public static void Initialize(AppDbContext db, IPasswordHasher passwordHasher)
     {
         if (!db.Entidades.Any())
         {
@@ -197,7 +197,7 @@ public static class SeedData
                 new Campanha { EntidadeId = entidades[2].Id, Assunto = "Benefícios para Sócios — Novidades 2026", Destinatarios = "Contribuintes", TotalDestinatarios = 562, DataEnvio = null, Status = StatusCampanha.Rascunho, Criador = "Lucia Fernandes" }
             );
 
-            var defaultHash = PasswordHelper.Hash("Senha@123");
+            var defaultHash = passwordHasher.Hash("Senha@123");
             db.Usuarios.AddRange(
                 new Usuario { Nome = "Ana Lima", Email = "ana.lima@sindhosp.org.br", SenhaHash = defaultHash, UltimoAcesso = DateTime.Now.AddMinutes(-15), Permissoes = new() { new() { EntidadeId = entidades[0].Id, NomeEntidade = "SINDHOSP", Modulos = new() { "Contribuintes", "Cobranças", "Jurídico", "Financeiro", "Mailing" } }, new() { EntidadeId = entidades[4].Id, NomeEntidade = "FETURH", Modulos = new() { "Contribuintes" } } } },
                 new Usuario { Nome = "Carlos Silva", Email = "carlos.silva@sindhosp.org.br", SenhaHash = defaultHash, UltimoAcesso = DateTime.Now.AddHours(-2), Permissoes = new() { new() { EntidadeId = entidades[0].Id, NomeEntidade = "SINDHOSP", Modulos = new() { "Contribuintes", "Cobranças", "Mailing" } } } },

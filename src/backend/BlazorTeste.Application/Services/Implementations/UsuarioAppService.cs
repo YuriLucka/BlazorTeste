@@ -25,6 +25,11 @@ public class UsuarioAppService(IUsuarioRepository repo) : IUsuarioAppService
         Nome = u.Nome,
         Email = u.Email,
         UltimoAcesso = u.UltimoAcesso,
-        Permissoes = u.Permissoes
+        Permissoes = u.Permissoes.Select(p => new PermissaoEntidadeDto
+        {
+            EntidadeId = p.EntidadeId,
+            NomeEntidade = p.NomeEntidade,
+            Modulos = p.Modulos
+        }).ToList()
     };
 }

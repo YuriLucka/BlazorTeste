@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using BlazorTeste.Application.Security;
 using BlazorTeste.Application.Services.Implementations;
 using BlazorTeste.Application.Services.Interfaces;
 using BlazorTeste.Infrastructure;
@@ -83,7 +84,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    SeedData.Initialize(db);
+    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
+    SeedData.Initialize(db, hasher);
 }
 
 if (app.Environment.IsDevelopment())
