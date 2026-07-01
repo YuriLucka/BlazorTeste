@@ -10,7 +10,7 @@ public class GerarRelatorioRequestValidator : AbstractValidator<GerarRelatorioRe
     public GerarRelatorioRequestValidator()
     {
         RuleFor(r => r.Formato)
-            .Must(f => FormatosValidos.Contains(f.ToUpperInvariant()))
+            .Must(f => f is not null && FormatosValidos.Contains(f.ToUpperInvariant()))
             .WithMessage($"Formato deve ser um de: {string.Join(", ", FormatosValidos)}.");
 
         RuleFor(r => r.DataFim)

@@ -34,6 +34,16 @@ public class GerarRelatorioRequestValidatorTests
     }
 
     [Fact]
+    public void Validate_FormatoNulo_RetornaErro()
+    {
+        var request = new GerarRelatorioRequest { Formato = null! };
+
+        var result = _sut.TestValidate(request);
+
+        result.ShouldHaveValidationErrorFor(r => r.Formato);
+    }
+
+    [Fact]
     public void Validate_DataFimAntesDataInicio_RetornaErro()
     {
         var request = new GerarRelatorioRequest
