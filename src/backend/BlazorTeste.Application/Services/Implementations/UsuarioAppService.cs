@@ -1,29 +1,30 @@
 using BlazorTeste.Application.DTOs;
 using BlazorTeste.Application.Services.Interfaces;
 using BlazorTeste.Domain.Entities;
-using BlazorTeste.Domain.Interfaces.Repositories;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace BlazorTeste.Application.Services.Implementations;
 
-public class UsuarioAppService(IUsuarioRepository repo) : IUsuarioAppService
+public class UsuarioAppService(UserManager<ApplicationUser> userManager) : IUsuarioAppService
 {
     public async Task<IEnumerable<UsuarioDto>> GetAllAsync()
     {
-        var items = await repo.GetAllAsync();
+        var items = await userManager.Users.ToListAsync();
         return items.Select(Map);
     }
 
     public async Task<UsuarioDto?> GetByEmailAsync(string email)
     {
-        var u = await repo.GetByEmailAsync(email);
+        var u = await userManager.FindByEmailAsync(email);
         return u is null ? null : Map(u);
     }
 
-    private static UsuarioDto Map(Usuario u) => new()
+    private static UsuarioDto Map(ApplicationUser u) => new()
     {
         Id = u.Id,
         Nome = u.Nome,
-        Email = u.Email,
+        Email = u.Email!,
         UltimoAcesso = u.UltimoAcesso,
         Permissoes = u.Permissoes.Select(p => new PermissaoEntidadeDto
         {
