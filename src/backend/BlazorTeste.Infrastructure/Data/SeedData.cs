@@ -1,12 +1,12 @@
-using BlazorTeste.Application.Security;
 using BlazorTeste.Domain.Entities;
 using BlazorTeste.Domain.Enums;
+using Microsoft.AspNetCore.Identity;
 
 namespace BlazorTeste.Infrastructure.Data;
 
 public static class SeedData
 {
-    public static void Initialize(AppDbContext db, IPasswordHasher passwordHasher)
+    public static async Task InitializeAsync(AppDbContext db, UserManager<ApplicationUser> userManager)
     {
         if (!db.Entidades.Any())
         {
@@ -197,17 +197,19 @@ public static class SeedData
                 new Campanha { EntidadeId = entidades[2].Id, Assunto = "Benefícios para Sócios — Novidades 2026", Destinatarios = "Contribuintes", TotalDestinatarios = 562, DataEnvio = null, Status = StatusCampanha.Rascunho, Criador = "Lucia Fernandes" }
             );
 
-            var defaultHash = passwordHasher.Hash("Senha@123");
-            db.Usuarios.AddRange(
-                new Usuario { Nome = "Ana Lima", Email = "ana.lima@sindhosp.org.br", SenhaHash = defaultHash, UltimoAcesso = DateTime.Now.AddMinutes(-15), Permissoes = new() { new() { EntidadeId = entidades[0].Id, NomeEntidade = "SINDHOSP", Modulos = new() { "Contribuintes", "Cobranças", "Jurídico", "Financeiro", "Mailing" } }, new() { EntidadeId = entidades[4].Id, NomeEntidade = "FETURH", Modulos = new() { "Contribuintes" } } } },
-                new Usuario { Nome = "Carlos Silva", Email = "carlos.silva@sindhosp.org.br", SenhaHash = defaultHash, UltimoAcesso = DateTime.Now.AddHours(-2), Permissoes = new() { new() { EntidadeId = entidades[0].Id, NomeEntidade = "SINDHOSP", Modulos = new() { "Contribuintes", "Cobranças", "Mailing" } } } },
-                new Usuario { Nome = "Fernanda Costa", Email = "fernanda.costa@sindbar.org.br", SenhaHash = defaultHash, UltimoAcesso = DateTime.Now.AddHours(-1), Permissoes = new() { new() { EntidadeId = entidades[1].Id, NomeEntidade = "SINDBAR", Modulos = new() { "Contribuintes", "Cobranças", "Jurídico", "Financeiro", "Mailing", "Usuários" } } } },
-                new Usuario { Nome = "Pedro Martins", Email = "pedro.martins@sindbar.org.br", SenhaHash = defaultHash, UltimoAcesso = DateTime.Now.AddDays(-1), Permissoes = new() { new() { EntidadeId = entidades[1].Id, NomeEntidade = "SINDBAR", Modulos = new() { "Contribuintes", "Mailing" } } } },
-                new Usuario { Nome = "Admin Sistema", Email = "admin@dpi.com.br", SenhaHash = defaultHash, UltimoAcesso = DateTime.Now.AddHours(-3), Permissoes = new() { new() { EntidadeId = entidades[0].Id, NomeEntidade = "SINDHOSP", Modulos = new() { "Contribuintes", "Cobranças", "Jurídico", "Financeiro", "Mailing", "Entidades", "Usuários" } }, new() { EntidadeId = entidades[1].Id, NomeEntidade = "SINDBAR", Modulos = new() { "Contribuintes", "Cobranças", "Jurídico", "Financeiro", "Mailing", "Entidades", "Usuários" } } } },
-                new Usuario { Nome = "Lucia Fernandes", Email = "lucia.fernandes@sindetur.org.br", SenhaHash = defaultHash, UltimoAcesso = DateTime.Now.AddDays(-2), Permissoes = new() { new() { EntidadeId = entidades[2].Id, NomeEntidade = "SINDETUR", Modulos = new() { "Contribuintes", "Cobranças", "Mailing" } }, new() { EntidadeId = entidades[3].Id, NomeEntidade = "SINDEVEN", Modulos = new() { "Contribuintes" } } } }
-            );
-
             db.SaveChanges();
+
+            var usuarios = new List<ApplicationUser>
+            {
+                new() { UserName = "ana.lima@sindhosp.org.br", Email = "ana.lima@sindhosp.org.br", EmailConfirmed = true, Nome = "Ana Lima", UltimoAcesso = DateTime.Now.AddMinutes(-15), Permissoes = new() { new() { EntidadeId = entidades[0].Id, NomeEntidade = "SINDHOSP", Modulos = new() { "Contribuintes", "Cobranças", "Jurídico", "Financeiro", "Mailing" } }, new() { EntidadeId = entidades[4].Id, NomeEntidade = "FETURH", Modulos = new() { "Contribuintes" } } } },
+                new() { UserName = "carlos.silva@sindhosp.org.br", Email = "carlos.silva@sindhosp.org.br", EmailConfirmed = true, Nome = "Carlos Silva", UltimoAcesso = DateTime.Now.AddHours(-2), Permissoes = new() { new() { EntidadeId = entidades[0].Id, NomeEntidade = "SINDHOSP", Modulos = new() { "Contribuintes", "Cobranças", "Mailing" } } } },
+                new() { UserName = "fernanda.costa@sindbar.org.br", Email = "fernanda.costa@sindbar.org.br", EmailConfirmed = true, Nome = "Fernanda Costa", UltimoAcesso = DateTime.Now.AddHours(-1), Permissoes = new() { new() { EntidadeId = entidades[1].Id, NomeEntidade = "SINDBAR", Modulos = new() { "Contribuintes", "Cobranças", "Jurídico", "Financeiro", "Mailing", "Usuários" } } } },
+                new() { UserName = "pedro.martins@sindbar.org.br", Email = "pedro.martins@sindbar.org.br", EmailConfirmed = true, Nome = "Pedro Martins", UltimoAcesso = DateTime.Now.AddDays(-1), Permissoes = new() { new() { EntidadeId = entidades[1].Id, NomeEntidade = "SINDBAR", Modulos = new() { "Contribuintes", "Mailing" } } } },
+                new() { UserName = "admin@dpi.com.br", Email = "admin@dpi.com.br", EmailConfirmed = true, Nome = "Admin Sistema", UltimoAcesso = DateTime.Now.AddHours(-3), Permissoes = new() { new() { EntidadeId = entidades[0].Id, NomeEntidade = "SINDHOSP", Modulos = new() { "Contribuintes", "Cobranças", "Jurídico", "Financeiro", "Mailing", "Entidades", "Usuários" } }, new() { EntidadeId = entidades[1].Id, NomeEntidade = "SINDBAR", Modulos = new() { "Contribuintes", "Cobranças", "Jurídico", "Financeiro", "Mailing", "Entidades", "Usuários" } } } },
+                new() { UserName = "lucia.fernandes@sindetur.org.br", Email = "lucia.fernandes@sindetur.org.br", EmailConfirmed = true, Nome = "Lucia Fernandes", UltimoAcesso = DateTime.Now.AddDays(-2), Permissoes = new() { new() { EntidadeId = entidades[2].Id, NomeEntidade = "SINDETUR", Modulos = new() { "Contribuintes", "Cobranças", "Mailing" } }, new() { EntidadeId = entidades[3].Id, NomeEntidade = "SINDEVEN", Modulos = new() { "Contribuintes" } } } }
+            };
+            foreach (var usuario in usuarios)
+                await userManager.CreateAsync(usuario, "Senha@123");
         }
 
         if (!db.GuiaSindicais.Any() && db.Contribuintes.Any())
