@@ -29,39 +29,73 @@
                 <MudAlert Severity="Severity.Error" Class="mb-4" Dense="true">@_erro</MudAlert>
             }
 
-            <MudTextField @bind-Value="_email"
-                          Label="E-mail"
-                          Variant="Variant.Outlined"
-                          InputType="InputType.Email"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Email"
-                          Class="mb-3"
-                          FullWidth="true" />
+            @if (!_aguardandoCodigo)
+            {
+                <MudTextField @bind-Value="_email"
+                              Label="E-mail"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Email"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Email"
+                              Class="mb-3"
+                              FullWidth="true" />
 
-            <MudTextField @bind-Value="_senha"
-                          Label="Senha"
-                          Variant="Variant.Outlined"
-                          InputType="InputType.Password"
-                          Adornment="Adornment.Start"
-                          AdornmentIcon="@Icons.Material.Filled.Lock"
-                          Class="mb-5"
-                          FullWidth="true" />
+                <MudTextField @bind-Value="_senha"
+                              Label="Senha"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Password"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Lock"
+                              Class="mb-5"
+                              FullWidth="true" />
 
-            <MudButton Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       FullWidth="true"
-                       Size="Size.Large"
-                       OnClick="Entrar"
-                       Disabled="_loading"
-                       Class="mb-4">
-                @(_loading ? "Entrando..." : "Entrar")
-            </MudButton>
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           FullWidth="true"
+                           Size="Size.Large"
+                           OnClick="Entrar"
+                           Disabled="_loading"
+                           Class="mb-4">
+                    @(_loading ? "Entrando..." : "Entrar")
+                </MudButton>
 
-            <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined">
-                <MudText Typo="Typo.caption">
-                    Senha padrão de todos os usuários seed: <b>Senha@123</b>
+                <MudAlert Severity="Severity.Info" Dense="true" Variant="Variant.Outlined">
+                    <MudText Typo="Typo.caption">
+                        Senha padrão de todos os usuários seed: <b>Senha@123</b>
+                    </MudText>
+                </MudAlert>
+            }
+            else
+            {
+                <MudText Typo="Typo.body2" Class="mb-4">
+                    Digite o código de 6 dígitos do seu app autenticador.
                 </MudText>
-            </MudAlert>
+
+                <MudTextField @bind-Value="_codigo"
+                              Label="Código de verificação"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Text"
+                              Adornment="Adornment.Start"
+                              AdornmentIcon="@Icons.Material.Filled.Security"
+                              Class="mb-5"
+                              FullWidth="true" />
+
+                <MudButton Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           FullWidth="true"
+                           Size="Size.Large"
+                           OnClick="VerificarCodigo"
+                           Disabled="_loading"
+                           Class="mb-2">
+                    @(_loading ? "Verificando..." : "Verificar")
+                </MudButton>
+
+                <MudButton Variant="Variant.Text"
+                           FullWidth="true"
+                           OnClick="@(() => { _aguardandoCodigo = false; _erro = null; })">
+                    Voltar
+                </MudButton>
+            }
         </MudCardContent>
     </MudCard>
 </div>
@@ -69,6 +103,9 @@
 @code {
     private string _email = "";
     private string _senha = "";
+    private string _codigo = "";
+    private string? _mfaToken;
+    private bool _aguardandoCodigo;
     private string? _erro;
     private bool _loading;
 
@@ -98,9 +135,59 @@
             req.Content = JsonContent.Create(new LoginRequest { Email = _email.Trim(), Senha = _senha });
             var response = await Http.SendAsync(req);
 
-            if (!response.IsSuccessStatusCode)
+            if (response.StatusCode is not (System.Net.HttpStatusCode.OK or System.Net.HttpStatusCode.Accepted))
             {
                 _erro = "E-mail ou senha inválidos.";
+                return;
+            }
+
+            var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+            if (result is null)
+            {
+                _erro = "E-mail ou senha inválidos.";
+                return;
+            }
+
+            if (result.RequiresTwoFactor)
+            {
+                _mfaToken = result.MfaToken;
+                _aguardandoCodigo = true;
+                return;
+            }
+
+            TokenService.SetToken(result.AccessToken);
+            Navigation.NavigateTo("/", replace: true);
+        }
+        catch
+        {
+            _erro = "Não foi possível conectar ao servidor.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task VerificarCodigo()
+    {
+        _erro = null;
+
+        if (string.IsNullOrWhiteSpace(_codigo) || _mfaToken is null)
+        {
+            _erro = "Informe o código de verificação.";
+            return;
+        }
+
+        _loading = true;
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, "api/auth/login/2fa");
+            req.Content = JsonContent.Create(new TwoFactorVerifyRequest { MfaToken = _mfaToken, Code = _codigo.Trim() });
+            var response = await Http.SendAsync(req);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _erro = "Código inválido ou sessão de verificação expirada.";
                 return;
             }
 
