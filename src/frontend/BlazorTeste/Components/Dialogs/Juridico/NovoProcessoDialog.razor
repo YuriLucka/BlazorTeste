@@ -133,7 +133,7 @@
         _advogados = await JuridicoService.GetAdvogadosAsync();
     }
 
-    private Task<IEnumerable<string>> BuscarAdvogado(string value)
+    private Task<IEnumerable<string>> BuscarAdvogado(string value, CancellationToken token)
     {
         var nomes = _advogados.Select(a => a.Nome);
         if (string.IsNullOrWhiteSpace(value))

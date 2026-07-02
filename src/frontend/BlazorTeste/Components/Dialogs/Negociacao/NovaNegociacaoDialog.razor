@@ -268,7 +268,7 @@
             : await ContribuinteService.GetAllAsync();
     }
 
-    private Task<IEnumerable<Contribuinte>> BuscarContribuinte(string v) =>
+    private Task<IEnumerable<Contribuinte>> BuscarContribuinte(string v, CancellationToken token) =>
         Task.FromResult(_contribuintes
             .Where(c => string.IsNullOrEmpty(v) ||
                         c.RazaoSocial.Contains(v, StringComparison.OrdinalIgnoreCase) ||

@@ -181,7 +181,7 @@
         }
     }
 
-    private Task<IEnumerable<string>> BuscarFornecedor(string value)
+    private Task<IEnumerable<string>> BuscarFornecedor(string value, CancellationToken token)
     {
         var nomes = _fornecedores.Select(f => f.Nome);
         if (string.IsNullOrWhiteSpace(value))
