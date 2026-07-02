@@ -244,7 +244,7 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
 
     private int _step = 0;
     private static readonly string[] _labels = { "Contribuinte", "Condições", "Confirmação" };

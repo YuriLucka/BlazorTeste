@@ -110,7 +110,7 @@
 </MudDialog>
 
 @code {
-    [CascadingParameter] private MudDialogInstance MudDialog { get; set; } = null!;
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = null!;
 
     private string _numero = "";
     private DateTime? _dataAbertura = DateTime.Today;
