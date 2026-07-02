@@ -3,14 +3,15 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using BlazorTeste.Api.Filters;
 using BlazorTeste.Api.Validators;
-using BlazorTeste.Application.Security;
 using BlazorTeste.Application.Services.Implementations;
 using BlazorTeste.Application.Services.Interfaces;
 using BlazorTeste.Application.Validators;
+using BlazorTeste.Domain.Entities;
 using BlazorTeste.Infrastructure;
 using BlazorTeste.Infrastructure.Data;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
@@ -36,6 +37,19 @@ builder.Services.AddScoped<IMailingAppService, MailingAppService>();
 
 builder.Services.AddValidatorsFromAssemblyContaining<GerarRelatorioRequestValidator>();
 builder.Services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>();
+
+builder.Services.AddIdentityCore<ApplicationUser>(opt =>
+    {
+        opt.Password.RequiredLength = 8;
+        opt.Lockout.MaxFailedAccessAttempts = 5;
+        opt.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(15);
+        opt.User.RequireUniqueEmail = true;
+    })
+    .AddRoles<IdentityRole<Guid>>()
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddMemoryCache();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(opt =>
@@ -91,8 +105,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-    SeedData.Initialize(db, hasher);
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    await SeedData.InitializeAsync(db, userManager);
 }
 
 if (app.Environment.IsDevelopment())
