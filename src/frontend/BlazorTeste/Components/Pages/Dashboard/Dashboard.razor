@@ -105,7 +105,7 @@
             <MudCardContent>
                 <MudChart ChartType="ChartType.Bar"
                           ChartSeries="@_chartSeries"
-                          XAxisLabels="@_chartLabels"
+                          ChartLabels="@_chartLabels"
                           Width="100%"
                           Height="280px"
                           ChartOptions="@_chartOptions" />
@@ -199,9 +199,9 @@
     private decimal _guiasInadimplencia;
     private List<Cobranca> _ultimasCobrancas = new();
     private List<Audiencia> _proximasAudiencias = new();
-    private List<ChartSeries> _chartSeries = new();
+    private List<ChartSeries<double>> _chartSeries = new();
     private string[] _chartLabels = Array.Empty<string>();
-    private readonly ChartOptions _chartOptions = new ChartOptions
+    private readonly BarChartOptions _chartOptions = new BarChartOptions
     {
         YAxisFormat = "C0",
         MaxNumYAxisTicks = 6
@@ -238,9 +238,9 @@
 
         var months = Enumerable.Range(0, 6).Select(i => DateTime.Today.AddMonths(-5 + i)).ToList();
         _chartLabels = months.Select(m => m.ToString("MMM/yy")).ToArray();
-        _chartSeries = new List<ChartSeries>
+        _chartSeries = new List<ChartSeries<double>>
         {
-            new ChartSeries
+            new ChartSeries<double>
             {
                 Name = "Arrecadado (R$)",
                 Data = months.Select(m =>
