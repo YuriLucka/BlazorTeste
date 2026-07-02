@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace BlazorTeste.Infrastructure.Data.Configurations;
 
-public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
+public class ApplicationUserConfiguration : IEntityTypeConfiguration<ApplicationUser>
 {
     private static readonly JsonSerializerOptions _json = new();
     private static readonly ValueComparer<List<PermissaoEntidade>> _comparer = new(
@@ -14,7 +14,7 @@ public class UsuarioConfiguration : IEntityTypeConfiguration<Usuario>
         v => JsonSerializer.Serialize(v, _json).GetHashCode(),
         v => JsonSerializer.Deserialize<List<PermissaoEntidade>>(JsonSerializer.Serialize(v, _json), _json)!);
 
-    public void Configure(EntityTypeBuilder<Usuario> b)
+    public void Configure(EntityTypeBuilder<ApplicationUser> b)
     {
         b.Property(u => u.Permissoes)
             .HasConversion(
