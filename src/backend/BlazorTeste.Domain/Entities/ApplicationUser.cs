@@ -1,14 +1,13 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace BlazorTeste.Domain.Entities;
 
-public class Usuario
+public class ApplicationUser : IdentityUser<Guid>
 {
-    public int Id { get; set; }
     public string Nome { get; set; } = "";
-    public string Email { get; set; } = "";
-    public string SenhaHash { get; set; } = "";
+    public DateTime UltimoAcesso { get; set; }
     public string? RefreshToken { get; set; }
     public DateTime? RefreshTokenExpiry { get; set; }
-    public DateTime UltimoAcesso { get; set; }
     public List<PermissaoEntidade> Permissoes { get; set; } = new();
 }
 
