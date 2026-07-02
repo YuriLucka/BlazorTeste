@@ -1,8 +1,6 @@
-using BlazorTeste.Application.Security;
 using BlazorTeste.Domain.Interfaces.Repositories;
 using BlazorTeste.Infrastructure.Data;
 using BlazorTeste.Infrastructure.Repositories;
-using BlazorTeste.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,10 +24,8 @@ public static class DependencyInjection
         services.AddScoped<INegociacaoRepository, NegociacaoRepository>();
         services.AddScoped<IBaixaCobrancaRepository, BaixaCobrancaRepository>();
         services.AddScoped<IEntidadeRepository, EntidadeRepository>();
-        services.AddScoped<IUsuarioRepository, UsuarioRepository>();
         services.AddScoped<ICampanhaRepository, CampanhaRepository>();
         services.AddScoped<IConfiguracaoRepository, ConfiguracaoRepository>();
-        services.AddScoped<IPasswordHasher, PasswordHasher>();
 
         return services;
     }
