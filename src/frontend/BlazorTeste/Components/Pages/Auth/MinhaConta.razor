@@ -1,0 +1,157 @@
+@page "/minha-conta"
+@inject HttpClient Http
+@inject ISnackbar Snackbar
+@using BlazorTeste.Models
+@using System.Net.Http.Json
+@using Microsoft.AspNetCore.Components.Authorization
+
+<PageTitle>Minha Conta — SindERP</PageTitle>
+
+<MudText Typo="Typo.h5" Style="font-weight:600;" Class="mb-4">Minha Conta</MudText>
+
+<MudCard Elevation="2" Class="rounded-xl" Style="max-width:520px;">
+    <MudCardContent Class="pa-6">
+        <MudText Typo="Typo.h6" Class="mb-1">Segurança</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">
+            Autenticação de dois fatores (2FA) via app autenticador (Google Authenticator, Microsoft Authenticator, Authy).
+        </MudText>
+
+        @if (_carregando)
+        {
+            <MudProgressCircular Indeterminate="true" Size="Size.Small" />
+        }
+        else if (!_duasEtapasAtiva && _qrCodeBase64 is null)
+        {
+            <MudAlert Severity="Severity.Info" Dense="true" Class="mb-4">2FA está desativado.</MudAlert>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Security" OnClick="IniciarAtivacao">
+                Ativar 2FA
+            </MudButton>
+        }
+        else if (_qrCodeBase64 is not null)
+        {
+            <MudText Typo="Typo.body2" Class="mb-3">Escaneie o QR code no seu app autenticador e digite o código gerado pra confirmar.</MudText>
+            <div class="d-flex justify-center mb-3">
+                <img src="@($"data:image/png;base64,{_qrCodeBase64}")" alt="QR code 2FA" width="200" height="200" />
+            </div>
+            <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-3">
+                Chave manual: <code>@_sharedKey</code>
+            </MudText>
+            <MudTextField @bind-Value="_codigo" Label="Código de verificação" Variant="Variant.Outlined" Class="mb-3" FullWidth="true" />
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ConfirmarAtivacao" Disabled="_processando">
+                Confirmar ativação
+            </MudButton>
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Success" Dense="true" Class="mb-4">2FA está ativado.</MudAlert>
+            <MudTextField @bind-Value="_codigo" Label="Código de verificação (pra desativar)" Variant="Variant.Outlined" Class="mb-3" FullWidth="true" />
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" OnClick="Desativar" Disabled="_processando">
+                Desativar 2FA
+            </MudButton>
+        }
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [CascadingParameter] private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private bool _carregando = true;
+    private bool _processando;
+    private bool _duasEtapasAtiva;
+    private string? _qrCodeBase64;
+    private string _sharedKey = "";
+    private string _codigo = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateTask;
+        _duasEtapasAtiva = state.User.FindFirst("twoFactorEnabled")?.Value == "true";
+        _carregando = false;
+    }
+
+    private async Task IniciarAtivacao()
+    {
+        _processando = true;
+        try
+        {
+            var response = await Http.PostAsync("api/auth/2fa/setup", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Não foi possível iniciar a ativação do 2FA.", Severity.Error);
+                return;
+            }
+            var setup = await response.Content.ReadFromJsonAsync<TwoFactorSetupResponse>();
+            _qrCodeBase64 = setup!.QrCodePngBase64;
+            _sharedKey = setup.SharedKey;
+        }
+        finally
+        {
+            _processando = false;
+        }
+    }
+
+    private async Task ConfirmarAtivacao()
+    {
+        if (string.IsNullOrWhiteSpace(_codigo))
+        {
+            Snackbar.Add("Informe o código de verificação.", Severity.Warning);
+            return;
+        }
+
+        _processando = true;
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, "api/auth/2fa/enable")
+            {
+                Content = JsonContent.Create(new TwoFactorCodeRequest { Code = _codigo.Trim() })
+            };
+            var response = await Http.SendAsync(req);
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Código inválido.", Severity.Error);
+                return;
+            }
+
+            _qrCodeBase64 = null;
+            _duasEtapasAtiva = true;
+            _codigo = "";
+            Snackbar.Add("2FA ativado com sucesso.", Severity.Success);
+        }
+        finally
+        {
+            _processando = false;
+        }
+    }
+
+    private async Task Desativar()
+    {
+        if (string.IsNullOrWhiteSpace(_codigo))
+        {
+            Snackbar.Add("Informe o código de verificação.", Severity.Warning);
+            return;
+        }
+
+        _processando = true;
+        try
+        {
+            var req = new HttpRequestMessage(HttpMethod.Post, "api/auth/2fa/disable")
+            {
+                Content = JsonContent.Create(new TwoFactorCodeRequest { Code = _codigo.Trim() })
+            };
+            var response = await Http.SendAsync(req);
+            if (!response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Código inválido.", Severity.Error);
+                return;
+            }
+
+            _duasEtapasAtiva = false;
+            _codigo = "";
+            Snackbar.Add("2FA desativado.", Severity.Success);
+        }
+        finally
+        {
+            _processando = false;
+        }
+    }
+}

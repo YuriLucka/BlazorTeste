@@ -55,7 +55,7 @@
                     <MudText Typo="Typo.caption" Color="Color.Secondary">@UserEmail</MudText>
                 </div>
                 <MudDivider />
-                <MudMenuItem Icon="@Icons.Material.Filled.Person">Perfil</MudMenuItem>
+                <MudMenuItem Icon="@Icons.Material.Filled.Person" OnClick="@(() => Navigation.NavigateTo("/minha-conta"))">Perfil</MudMenuItem>
                 <MudDivider />
                 <MudMenuItem Icon="@Icons.Material.Filled.Logout" OnClick="@(async (MouseEventArgs _) => await LogoutClick())">
                     <MudText Color="Color.Error">Sair</MudText>
