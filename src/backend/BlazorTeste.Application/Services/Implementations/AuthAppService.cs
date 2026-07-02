@@ -35,17 +35,18 @@ public class AuthAppService(
             return null;
         }
 
-        await userManager.ResetAccessFailedCountAsync(user);
         user.UltimoAcesso = DateTime.UtcNow;
-        await userManager.UpdateAsync(user);
 
         if (user.TwoFactorEnabled)
         {
+            await userManager.UpdateAsync(user);
             var mfaToken = Guid.NewGuid().ToString("N");
             cache.Set($"mfa:{mfaToken}", user.Id, MfaTokenLifetime);
             return new LoginResultDto { RequiresTwoFactor = true, MfaToken = mfaToken };
         }
 
+        await userManager.ResetAccessFailedCountAsync(user);
+        await userManager.UpdateAsync(user);
         return new LoginResultDto { Auth = await IssueTokensAsync(user) };
     }
 
