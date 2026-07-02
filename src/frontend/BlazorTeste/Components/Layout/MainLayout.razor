@@ -46,9 +46,11 @@
         </MudTooltip>
         <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
             <ActivatorContent>
-                <MudAvatar Color="Color.Secondary" Size="Size.Small" Class="ml-1" Style="cursor:pointer;">
-                    @GetInitials(UserName)
-                </MudAvatar>
+                <div @onclick="@context.ToggleAsync" style="cursor:pointer;">
+                    <MudAvatar Color="Color.Secondary" Size="Size.Small" Class="ml-1">
+                        @GetInitials(UserName)
+                    </MudAvatar>
+                </div>
             </ActivatorContent>
             <ChildContent>
                 <div class="px-4 py-3">
