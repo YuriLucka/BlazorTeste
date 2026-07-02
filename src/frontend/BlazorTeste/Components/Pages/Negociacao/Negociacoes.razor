@@ -142,7 +142,7 @@
                                     <td style="text-align:right">@((c.Multa + c.Juros).ToString("C2"))</td>
                                 </tr>
                             }
-                            <tr style="font-weight:700; background:var(--mud-palette-background-grey)">
+                            <tr style="font-weight:700; background:var(--mud-palette-background-gray)">
                                 <td colspan="2">Total</td>
                                 <td style="text-align:right">@_selected.DebitoOriginal.ToString("C2")</td>
                                 <td style="text-align:right">@_selected.CobrancasOriginais.Sum(c => c.Multa + c.Juros).ToString("C2")</td>
